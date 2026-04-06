@@ -7,31 +7,32 @@ const DIFF = {
     label:       "Barn",
     maxMisses:   5,
     baseSpeed:   1.2,
-    speedInc:    0.04,
-    maxSpeed:    3.5,
+    speedInc:    0.015,  // slow build — takes much longer to reach max
+    maxSpeed:    7.0,    // higher ceiling
     speedReset:  1.2,
     spawnBase:   1400,
-    spawnMin:    900,
-    spawnLevel:  15,
+    spawnMin:    800,
+    spawnLevel:  12,
     multiThresh: [0, 8, 15, 25, 35, 50],
-    roundSize:   8,
-    perfBonus:   3,
+    roundSize:   8,      // base; grows dynamically with level
+    perfBonus:   3,      // base; grows dynamically with level
     catchRadius: 95,
   },
   vuxen: {
     label:       "Vuxen",
-    maxMisses:   3,
+    maxMisses:   3,      // lives only lost from catching 💔
     baseSpeed:   2.5,
-    speedInc:    0.18,
-    maxSpeed:    11.0,
+    speedInc:    0.22,
+    maxSpeed:    16.0,   // higher ceiling
     speedReset:  2.5,
     spawnBase:   1000,
-    spawnMin:    380,
+    spawnMin:    360,
     spawnLevel:  14,
     multiThresh: [0, 5, 10, 15, 20, 25],
-    roundSize:   10,
-    perfBonus:   5,
+    roundSize:   10,     // base; grows dynamically with level
+    perfBonus:   5,      // base; grows dynamically with level
     catchRadius: 58,
+    missPenalty: 2,      // points lost per missed star (instead of life)
   },
 };
 
@@ -61,9 +62,9 @@ const LIFE_TYPES = [
 ];
 
 const POWERUP_TYPES = [
-  { id: "magnet", emoji: "🧲", label: "Magnet!",  dur: 6000, color: "#67e8f9" },
-  { id: "slowmo", emoji: "⏱️",  label: "Slow-mo!", dur: 5000, color: "#c4b5fd" },
-  { id: "shield", emoji: "🛡️",  label: "Sköld!",   dur: 8000, color: "#86efac" },
+  { id: "magnet",  emoji: "🧲", label: "Magnet!",   dur: 6000, color: "#67e8f9" },
+  { id: "slowmo",  emoji: "⏱️",  label: "Slow-mo!",  dur: 5000, color: "#c4b5fd" },
+  { id: "rainbow", emoji: "🌈", label: "Regnbåge!", dur: 7000, color: "#ff9de2" },
 ];
 
 // ══════════════════════════════════════

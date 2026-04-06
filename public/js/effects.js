@@ -180,11 +180,12 @@ function updateSpeedBar() {
 // ── Round bar ─────────────────────────────────────────────────────────────────
 let _lastRoundPct = -1, _lastRoundClass = "", _lastRoundLL = "", _lastRoundLR = "";
 function updateRoundBar() {
+  const rs    = typeof getRoundSize === "function" ? getRoundSize() : cfg.roundSize;
   const total = roundCaught + roundMissed;
-  const pct   = Math.round(Math.min(total / cfg.roundSize * 100, 100));
+  const pct   = Math.round(Math.min(total / rs * 100, 100));
   const cls   = roundMissed === 0 ? "clean" : "dirty";
   const ll    = "Omgång " + roundNum + (roundMissed === 0 ? " 💚" : " 💔");
-  const lr    = total + "/" + cfg.roundSize + " 🎯";
+  const lr    = total + "/" + rs + " 🎯";
   if (pct !== _lastRoundPct)   { roundFill.style.width = pct + "%"; _lastRoundPct = pct; }
   if (cls !== _lastRoundClass) { roundFill.className = cls;          _lastRoundClass = cls; }
   if (ll  !== _lastRoundLL)    { roundLabelL.textContent = ll;       _lastRoundLL = ll; }

@@ -297,15 +297,74 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0020;}
 #diff-section{display:flex;gap:14px;margin-bottom:14px;margin-top:2px;}
 .diff-btn{padding:10px 28px;}
 
+/* ── LIVE RANK HUD ── */
+#rank-hud{
+  font-family:"Fredoka One",cursive;font-size:13px;
+  color:#ffe066;margin-left:4px;min-width:0;
+  transition:opacity 0.3s;white-space:nowrap;
+}
+
+/* ── RAINBOW TRAIL DOTS ── */
+.rainbow-dot{
+  position:absolute;border-radius:50%;pointer-events:none;z-index:7;
+  transition:none;
+}
+
+/* ── UNICORN POWER-UP STATES ── */
+/* Magnet: blue electric pulse */
+@keyframes uniMagnet{
+  0%  {filter:drop-shadow(0 0 6px #67e8f9) drop-shadow(0 0 2px #fff);}
+  50% {filter:drop-shadow(0 0 18px #67e8f9) drop-shadow(0 0 8px #a5f3fc);}
+  100%{filter:drop-shadow(0 0 6px #67e8f9) drop-shadow(0 0 2px #fff);}
+}
+@keyframes uniMagnetShake{
+  0%,100%{transform:translate(-50%,-50%) rotate(-3deg);}
+  25%    {transform:translate(calc(-50% + 3px),-50%) rotate(2deg);}
+  75%    {transform:translate(calc(-50% - 3px),-50%) rotate(-2deg);}
+}
+#unicorn.has-magnet{
+  animation:uniMagnet 0.8s ease-in-out infinite, uniMagnetShake 0.25s ease-in-out infinite;
+}
+
+/* Slow-mo: purple dreamy pulse */
+@keyframes uniSlowmo{
+  0%,100%{filter:drop-shadow(0 0 8px #c4b5fd) drop-shadow(0 0 20px #7c3aed);transform:translate(-50%,-50%) scale(1);}
+  50%    {filter:drop-shadow(0 0 22px #c4b5fd) drop-shadow(0 0 40px #7c3aed);transform:translate(-50%,-50%) scale(1.1);}
+}
+#unicorn.has-slowmo{ animation:uniSlowmo 1.2s ease-in-out infinite; }
+
+/* Rainbow: full rainbow spin glow */
+@keyframes uniRainbow{
+  0%  {filter:drop-shadow(0 0 10px #ff4444);}
+  14% {filter:drop-shadow(0 0 10px #ff8800);}
+  28% {filter:drop-shadow(0 0 10px #ffee00);}
+  42% {filter:drop-shadow(0 0 10px #44dd44);}
+  57% {filter:drop-shadow(0 0 10px #44aaff);}
+  71% {filter:drop-shadow(0 0 10px #aa44ff);}
+  85% {filter:drop-shadow(0 0 10px #ff44cc);}
+  100%{filter:drop-shadow(0 0 10px #ff4444);}
+}
+@keyframes uniRainbowBounce{
+  0%,100%{transform:translate(-50%,-50%) scale(1) rotate(-4deg);}
+  25%    {transform:translate(-50%,-52%) scale(1.08) rotate(2deg);}
+  75%    {transform:translate(-50%,-48%) scale(1.05) rotate(-2deg);}
+}
+#unicorn.has-rainbow{
+  animation:uniRainbow 0.5s linear infinite, uniRainbowBounce 0.7s ease-in-out infinite;
+}
+
 </style>
 </head>
 <body>
 
+<!-- Outer shell: constrains width on desktop -->
 <div id="outer-shell">
+
 <div id="game-wrap">
 
+  <!-- HUD -->
   <div id="top-bar">
-    ⭐<span class="hval" id="score-val">0</span>
+    ⭐<span class="hval" id="score-val">0</span><span id="rank-hud"></span>
     <span class="sep">|</span>
     Niv.<span class="hval" id="level-val">1</span>
     <span class="sep">|</span>
@@ -317,8 +376,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0020;}
   </div>
   <div id="speed-strip"><div id="speed-fill"></div></div>
 
+  <!-- Quit button (visible during play) -->
   <button id="quit-btn">Avsluta ✕</button>
 
+  <!-- Round progress bar -->
   <div id="round-bar-wrap">
     <div id="round-label">
       <span id="round-label-left">Omgång 1</span>
@@ -327,11 +388,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0020;}
     <div id="round-track"><div id="round-fill" class="clean"></div></div>
   </div>
 
+  <!-- Combo ring + unicorn -->
   <div id="combo-ring"></div>
   <div id="combo-flash"></div>
   <div id="unicorn">🦄</div>
 
   <div id="powerup-bar"></div>
+
   <div id="perfect-toast"></div>
   <div id="event-banner" class="normal"></div>
   <div id="centre-flash"></div>
@@ -347,14 +410,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0020;}
     <ellipse cx="350" cy="80" rx="120" ry="50" fill="#581c87" opacity="0.6"/>
   </svg>
 
+  <!-- How to play modal -->
   <div id="how-modal">
     <div id="how-box">
       <h2>❓ Hur spelar man?</h2>
+
       <div class="how-section">
         <h3>🕹️ Styrning</h3>
         <div class="how-row"><span class="how-icon">📱</span>Dra joysticken vänster / höger</div>
         <div class="how-row"><span class="how-icon">⌨️</span>Piltangenter eller A / D</div>
       </div>
+
       <div class="how-section">
         <h3>⭐ Stjärnor — fånga!</h3>
         <div class="how-row"><span class="how-icon">⭐</span>1p <span class="how-badge good">fånga</span></div>
@@ -363,6 +429,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0020;}
         <div class="how-row"><span class="how-icon">🌟</span>5p <span class="how-badge good">fånga</span></div>
         <div class="how-row"><span class="how-icon">✨</span>8p <span class="how-badge good">fånga</span></div>
       </div>
+
       <div class="how-section" id="how-vuxen" style="display:none">
         <h3>☠️ Farliga sprites — undvik!</h3>
         <div class="how-row"><span class="how-icon">💀</span>−3p om du tar dem <span class="how-badge bad">undvik</span></div>
@@ -374,27 +441,33 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0020;}
         <h3 style="margin-top:8px">⚡ Power-ups — fånga!</h3>
         <div class="how-row"><span class="how-icon">🧲</span>Magnet — drar till sig poängstjärnor</div>
         <div class="how-row"><span class="how-icon">⏱️</span>Slow-mo — saktar ner allt</div>
-        <div class="how-row"><span class="how-icon">🛡️</span>Sköld — skyddar mot ett 💔-träff</div>
+        <div class="how-row"><span class="how-icon">🌈</span>Regnbåge — osynligt läge, fångar allt!</div>
         <div class="how-row" style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px">Att undvika farliga sprites kostar ingenting.</div>
       </div>
+
       <div class="how-section">
         <h3>🔥 Combo</h3>
         <div class="how-row"><span class="how-icon">🔥</span>Streak ger multiplikator upp till ×6</div>
         <div class="how-row"><span class="how-icon">💚</span>Perfekt omgång = bonuspoäng!</div>
       </div>
+
       <button id="how-close">Stäng</button>
     </div>
   </div>
 
+  <!-- Level-up toast -->
   <div id="level-toast"></div>
 
+  <!-- Overlay (start / game-over screen) -->
   <div id="overlay">
     <div id="ov-top">
       <div class="ov-uni">🦄</div>
       <h1 id="overlay-title">Grattis på<br>Födelsedagen Ellie! 🎂</h1>
       <p id="overlay-sub">Fånga stjärnorna och samla poäng! ✨</p>
+
       <div id="end-medals"></div>
       <div id="rank-line"></div>
+
       <div id="stats-card">
         <div class="stat-row"><span class="stat-label">Poäng</span><span class="stat-val" id="stat-score">0</span></div>
         <div class="stat-row"><span class="stat-label">Stjärnor fångade</span><span class="stat-val" id="stat-caught">0</span></div>
@@ -402,18 +475,25 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0020;}
         <div class="stat-row"><span class="stat-label">Högsta multiplikator</span><span class="stat-val purple" id="stat-multi">×1</span></div>
         <div class="stat-row"><span class="stat-label">Perfekta omgångar</span><span class="stat-val green" id="stat-perfect">0</span></div>
       </div>
+
+      <!-- How to play -->
       <button id="how-btn">❓ Hur spelar man?</button>
+
+      <!-- Difficulty picker -->
       <p class="diff-label">Välj svårighetsgrad</p>
       <div id="diff-section">
         <button class="diff-btn barn selected" id="btn-barn" data-diff="barn">🐣 Barn</button>
         <button class="diff-btn vuxen"         id="btn-vuxen" data-diff="vuxen">🔥 Vuxen</button>
       </div>
+
       <div id="name-section">
         <input id="name-input" type="text" maxlength="14" placeholder="Ditt namn…"
                autocomplete="off" autocorrect="off" spellcheck="false">
         <button id="play-btn">Spela! ✨</button>
       </div>
     </div>
+
+    <!-- Toplist -->
     <div id="ov-toplist">
       <h3>🏆 Topplista</h3>
       <div id="tl-tabs">
@@ -427,10 +507,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0020;}
         <tbody id="tl-body"></tbody>
       </table>
     </div>
-  </div>
+  </div><!-- overlay -->
 
-</div>
-</div>
+</div><!-- game-wrap -->
+</div><!-- outer-shell -->
 
 <script>
 "use strict";
@@ -442,31 +522,32 @@ const DIFF = {
     label:       "Barn",
     maxMisses:   5,
     baseSpeed:   1.2,
-    speedInc:    0.04,
-    maxSpeed:    3.5,
+    speedInc:    0.015,  // slow build — takes much longer to reach max
+    maxSpeed:    7.0,    // higher ceiling
     speedReset:  1.2,
     spawnBase:   1400,
-    spawnMin:    900,
-    spawnLevel:  15,
+    spawnMin:    800,
+    spawnLevel:  12,
     multiThresh: [0, 8, 15, 25, 35, 50],
-    roundSize:   8,
-    perfBonus:   3,
+    roundSize:   8,      // base; grows dynamically with level
+    perfBonus:   3,      // base; grows dynamically with level
     catchRadius: 95,
   },
   vuxen: {
     label:       "Vuxen",
-    maxMisses:   3,
+    maxMisses:   3,      // lives only lost from catching 💔
     baseSpeed:   2.5,
-    speedInc:    0.18,
-    maxSpeed:    11.0,
+    speedInc:    0.22,
+    maxSpeed:    16.0,   // higher ceiling
     speedReset:  2.5,
     spawnBase:   1000,
-    spawnMin:    380,
+    spawnMin:    360,
     spawnLevel:  14,
     multiThresh: [0, 5, 10, 15, 20, 25],
-    roundSize:   10,
-    perfBonus:   5,
+    roundSize:   10,     // base; grows dynamically with level
+    perfBonus:   5,      // base; grows dynamically with level
     catchRadius: 58,
+    missPenalty: 2,      // points lost per missed star (instead of life)
   },
 };
 
@@ -496,9 +577,9 @@ const LIFE_TYPES = [
 ];
 
 const POWERUP_TYPES = [
-  { id: "magnet", emoji: "🧲", label: "Magnet!",  dur: 6000, color: "#67e8f9" },
-  { id: "slowmo", emoji: "⏱️",  label: "Slow-mo!", dur: 5000, color: "#c4b5fd" },
-  { id: "shield", emoji: "🛡️",  label: "Sköld!",   dur: 8000, color: "#86efac" },
+  { id: "magnet",  emoji: "🧲", label: "Magnet!",   dur: 6000, color: "#67e8f9" },
+  { id: "slowmo",  emoji: "⏱️",  label: "Slow-mo!",  dur: 5000, color: "#c4b5fd" },
+  { id: "rainbow", emoji: "🌈", label: "Regnbåge!", dur: 7000, color: "#ff9de2" },
 ];
 
 // ══════════════════════════════════════
@@ -858,11 +939,12 @@ function updateSpeedBar() {
 // ── Round bar ─────────────────────────────────────────────────────────────────
 let _lastRoundPct = -1, _lastRoundClass = "", _lastRoundLL = "", _lastRoundLR = "";
 function updateRoundBar() {
+  const rs    = typeof getRoundSize === "function" ? getRoundSize() : cfg.roundSize;
   const total = roundCaught + roundMissed;
-  const pct   = Math.round(Math.min(total / cfg.roundSize * 100, 100));
+  const pct   = Math.round(Math.min(total / rs * 100, 100));
   const cls   = roundMissed === 0 ? "clean" : "dirty";
   const ll    = "Omgång " + roundNum + (roundMissed === 0 ? " 💚" : " 💔");
-  const lr    = total + "/" + cfg.roundSize + " 🎯";
+  const lr    = total + "/" + rs + " 🎯";
   if (pct !== _lastRoundPct)   { roundFill.style.width = pct + "%"; _lastRoundPct = pct; }
   if (cls !== _lastRoundClass) { roundFill.className = cls;          _lastRoundClass = cls; }
   if (ll  !== _lastRoundLL)    { roundLabelL.textContent = ll;       _lastRoundLL = ll; }
@@ -1031,6 +1113,12 @@ let globalScoreCache={barn:null, vuxen:null};
 let tlShowDiff="barn";
 let bonusTimer=null;
 
+// Rainbow trail
+const RAINBOW_TRAIL_LEN = 22;
+const RAINBOW_HUE = ["#ff4444","#ff8800","#ffee00","#44dd44","#44aaff","#aa44ff","#ff44cc"];
+let rainbowPositions = []; // {x,y} ring buffer
+let rainbowDots = [];      // pre-created DOM elements (reused each frame)
+
 const keys={};
 let joyTouchId=null, joyTargetX=null;
 
@@ -1097,6 +1185,11 @@ function renderTop(d, highlightName="", globalList=undefined){
 // ══════════════════════════════════════
 //  POWER-UPS
 // ══════════════════════════════════════
+function _setPowerupClass(){
+  unicornEl.classList.toggle("has-magnet",  !!activePowerups.magnet);
+  unicornEl.classList.toggle("has-slowmo",  !!activePowerups.slowmo);
+  unicornEl.classList.toggle("has-rainbow", !!activePowerups.rainbow);
+}
 function activatePowerup(type){
   if(activePowerups[type.id]) clearTimeout(activePowerups[type.id].timer);
   const pu=document.getElementById("powerup-bar");
@@ -1115,8 +1208,11 @@ function activatePowerup(type){
   },1000);
   const endTimer=setTimeout(()=>{
     clearInterval(tick); puEl.remove(); delete activePowerups[type.id];
+    if(type.id==="rainbow"){ rainbowPositions=[]; hideRainbowDots(); }
+    _setPowerupClass();
   },type.dur);
   activePowerups[type.id]={timer:endTimer,tick,el:puEl};
+  _setPowerupClass();
   showBanner(type.emoji+" "+type.label,"powerup",2000);
   playMultiUp(2);
 }
@@ -1125,21 +1221,75 @@ function clearAllPowerups(){
     clearTimeout(p.timer); clearInterval(p.tick); if(p.el&&p.el.parentNode) p.el.remove();
   });
   activePowerups={};
+  rainbowPositions=[]; hideRainbowDots();
+  _setPowerupClass();
   const pb=document.getElementById("powerup-bar");
   if(pb) pb.innerHTML="";
-}
-function consumeShield(){
-  const p=activePowerups.shield;
-  if(!p) return false;
-  clearTimeout(p.timer); clearInterval(p.tick);
-  if(p.el&&p.el.parentNode) p.el.remove();
-  delete activePowerups.shield;
-  return true;
 }
 function applyMagnet(s){
   if(!activePowerups.magnet||s.kind!=="good") return; // only attract good sprites
   const dx=ux-s.x, dy=uy-s.y, dist=Math.sqrt(dx*dx+dy*dy);
   if(dist<180&&dist>1){ s.x+=dx/dist*3; s.y+=dy/dist*3; s.el.style.left=s.x+"px"; }
+}
+
+// ── Rainbow trail ─────────────────────────────────────────────────────────────
+function initRainbowDots(){
+  for(let i=0;i<RAINBOW_TRAIL_LEN;i++){
+    const d=document.createElement("div");
+    d.className="rainbow-dot"; d.style.display="none";
+    wrap.appendChild(d); rainbowDots.push(d);
+  }
+}
+function hideRainbowDots(){ rainbowDots.forEach(d=>d.style.display="none"); }
+function updateRainbowTrail(){
+  if(!activePowerups.rainbow){ hideRainbowDots(); rainbowPositions=[]; return; }
+  rainbowPositions.push({x:ux,y:uy});
+  if(rainbowPositions.length>RAINBOW_TRAIL_LEN) rainbowPositions.shift();
+  const len=rainbowPositions.length;
+  rainbowDots.forEach((d,i)=>{
+    const pos=rainbowPositions[len-1-i];
+    if(!pos){ d.style.display="none"; return; }
+    const frac=1-(i/RAINBOW_TRAIL_LEN);
+    const sz=Math.round(8+frac*30);
+    const col=RAINBOW_HUE[i%RAINBOW_HUE.length];
+    d.style.cssText=`display:block;width:${sz}px;height:${sz}px;background:${col};`+
+      `opacity:${(frac*0.75).toFixed(2)};left:${pos.x-sz/2}px;top:${pos.y-sz/2}px;`+
+      `filter:blur(${Math.round((1-frac)*3)}px);`;
+  });
+}
+function rainbowCatches(s){
+  if(!activePowerups.rainbow||!rainbowPositions.length) return false;
+  const r2=40*40;
+  for(const p of rainbowPositions){
+    const dx=s.x-p.x,dy=s.y-p.y;
+    if(dx*dx+dy*dy<r2) return true;
+  }
+  return false;
+}
+
+// ══════════════════════════════════════
+//  DYNAMIC ROUND SIZE (grows with level)
+// ══════════════════════════════════════
+function getRoundSize(){ return Math.min(cfg.roundSize+Math.floor((level-1)*1.5),25); }
+function getRoundBonus(){ return cfg.perfBonus+Math.floor((level-1)*0.8); }
+
+// ══════════════════════════════════════
+//  LIVE RANK INDICATOR
+// ══════════════════════════════════════
+function updateRankHud(){
+  const el=document.getElementById("rank-hud"); if(!el) return;
+  const top=loadTop(difficulty);
+  if(!top.length){ el.textContent=""; return; }
+  const rank=top.findIndex(e=>score>=e.score);
+  if(rank===0)     el.textContent="🥇";
+  else if(rank===1)el.textContent="🥈";
+  else if(rank===2)el.textContent="🥉";
+  else if(rank<0&&score>0) el.textContent="";
+  else             el.textContent="";
+  // Show label if beating or at top score
+  if(score>0&&score>=top[0].score) el.textContent="🥇 Nytt rekord!";
+  else if(rank>=0&&rank<3)         el.textContent=[" 🥇"," 🥈"," 🥉"][rank];
+  else                              el.textContent="";
 }
 
 // ══════════════════════════════════════
@@ -1239,6 +1389,7 @@ function onCatch(starType,x,y){
   flashWrap("rgba(255,220,0,0.30)");
   scorePop(x,y-20,pts,newM);
   catchPop(x,y);
+  updateRankHud();
   const mt=cfg.multiThresh;
   if(streak===mt[1]){ playStreak5(); streakWord("×2! 🌟",x,y); }
   else if(streak===mt[2]){ playWow(); streakWord("×3! 💖",x,y); }
@@ -1252,16 +1403,28 @@ function onCatch(starType,x,y){
   if(totalCaught>=nextChallengeAt&&!activeChallenge) activateChallenge();
 }
 function onMiss(sx,sy){
-  if(streak>=5) flashCentre("Hoppsan! 😅\nStreak bruten…",900);
+  if(streak>=5) flashCentre("Hoppsan! 😅
+Streak bruten…",900);
   streak=0; streakEl.textContent=0;
   multiplier=1; multiEl.textContent="×1";
   updateComboRing(1);
   currentSpeed=cfg.speedReset; updateSpeedBar();
   roundMissed++; totalCaught++;
   updateRoundBar(); checkRoundEnd();
-  misses++; updateHearts();
   missPop(sx,sy); playMiss();
-  if(misses>=cfg.maxMisses) endGame();
+
+  if(difficulty==="vuxen"){
+    // Vuxen: miss costs points, not a life
+    const pen=cfg.missPenalty||2;
+    score=Math.max(0,score-pen); scoreEl.textContent=score;
+    const d=document.createElement("div"); d.className="miss-flash";
+    d.textContent="-"+pen+"p";
+    d.style.cssText=`left:${sx}px;top:${sy}px;color:#ff9de2;font-size:13px;`;
+    wrap.appendChild(d); setTimeout(()=>{if(d.parentNode)d.parentNode.removeChild(d);},700);
+  } else {
+    misses++; updateHearts();
+    if(misses>=cfg.maxMisses) endGame();
+  }
 }
 function onBadCatch(type,x,y){
   streak=0; streakEl.textContent=0;
@@ -1279,12 +1442,7 @@ function onBadCatch(type,x,y){
 }
 function onLifeCatch(type,x,y){
   if(!type.givesLife){
-    // 💔 — shield blocks it (one hit)
-    if(consumeShield()){
-      showBanner("🛡️ Skölden skyddade dig från 💔!","powerup",1800);
-      playMultiUp(2);
-      return;
-    }
+    // 💔
     misses++; updateHearts(); playBadCatch(true);
     wrap.style.outline="4px solid rgba(255,0,0,0.6)";
     setTimeout(()=>wrap.style.outline="",250);
@@ -1308,17 +1466,18 @@ function onLifeCatch(type,x,y){
 //  ROUND SYSTEM
 // ══════════════════════════════════════
 function checkRoundEnd(){
-  if(roundCaught+roundMissed<cfg.roundSize) return;
+  const rs=getRoundSize();
+  if(roundCaught+roundMissed<rs) return;
   const wasPerfect=roundMissed===0;
   if(wasPerfect){
     perfectRounds++;
-    const bonus=cfg.perfBonus*multiplier;
+    const bonus=getRoundBonus()*multiplier;
     score+=bonus; scoreEl.textContent=score;
     playPerfect();
     showBanner("🌟 PERFEKT omgång "+roundNum+"!  +"+bonus+"p 🎉","perfect",2800);
     perfectFireworks();
   } else {
-    showBanner(`Omgång ${roundNum}: ${roundCaught}/${cfg.roundSize} ✅ ${roundMissed} ❌`,"round-end",1800);
+    showBanner(`Omgång ${roundNum}: ${roundCaught}/${rs} ✅ ${roundMissed} ❌`,"round-end",1800);
   }
   roundNum++; roundCaught=0; roundMissed=0;
   updateRoundBar();
@@ -1358,6 +1517,8 @@ function loop(ts){
   const moving=joyTouchId!==null||keys["ArrowLeft"]||keys["ArrowRight"]||keys["a"]||keys["d"];
   if(trailTimer>80&&moving){ addTrail(ux,uy); trailTimer=0; }
 
+  updateRainbowTrail();
+
   const speedMult=activePowerups.slowmo?0.4:1.0;
   const cr=cfg.catchRadius+((activeChallenge?.sizeBoost||0)>0?12:0);
   const cr2=cr*cr;
@@ -1368,7 +1529,8 @@ function loop(ts){
     applyMagnet(s);
     s.el.style.top=s.y+"px";
     const dx=s.x-ux, dy=s.y-uy;
-    if(dx*dx+dy*dy<cr2){
+    const caught=dx*dx+dy*dy<cr2||rainbowCatches(s);
+    if(caught){
       s.el.remove(); stars.splice(i,1);
       if(s.kind==="bad")        onBadCatch(s.type,s.x,s.y);
       else if(s.kind==="life")  onLifeCatch(s.type,s.x,s.y);
@@ -1481,7 +1643,8 @@ function startGame(){
   buildHearts(); updateHearts(); updateSpeedBar(); updateComboRing(1);
   comboFlash.style.opacity="0"; centreFlash.style.opacity="0"; perfectToast.style.opacity="0";
   eventBanner.classList.remove("show");
-  document.getElementById("overlay-title").textContent="Grattis på\nFödelsedagen Ellie! 🎂";
+  document.getElementById("overlay-title").textContent="Grattis på
+Födelsedagen Ellie! 🎂";
   document.getElementById("overlay-sub").textContent="Fånga stjärnorna och samla poäng! ✨";
   document.getElementById("how-vuxen").style.display=difficulty==="vuxen"?"":"none";
   document.getElementById("stats-card").style.display="none";
@@ -1494,6 +1657,10 @@ function startGame(){
   comboRing.className=difficulty==="vuxen"?"vuxen":"";
   joyTouchId=null; joyTargetX=null; joyKnob.style.left="50%";
   updateRoundBar(); makeClouds(); applyTheme(1);
+
+  // Init rainbow trail dots on first play
+  if(rainbowDots.length===0) initRainbowDots();
+  rainbowPositions=[]; hideRainbowDots();
 
   overlay.classList.add("hidden");
   quitBtn.classList.add("visible");

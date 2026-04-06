@@ -45,6 +45,12 @@ let globalScoreCache={barn:null, vuxen:null};
 let tlShowDiff="barn";
 let bonusTimer=null;
 
+// Rainbow trail
+const RAINBOW_TRAIL_LEN = 22;
+const RAINBOW_HUE = ["#ff4444","#ff8800","#ffee00","#44dd44","#44aaff","#aa44ff","#ff44cc"];
+let rainbowPositions = []; // {x,y} ring buffer
+let rainbowDots = [];      // pre-created DOM elements (reused each frame)
+
 const keys={};
 let joyTouchId=null, joyTargetX=null;
 
@@ -111,6 +117,11 @@ function renderTop(d, highlightName="", globalList=undefined){
 // ══════════════════════════════════════
 //  POWER-UPS
 // ══════════════════════════════════════
+function _setPowerupClass(){
+  unicornEl.classList.toggle("has-magnet",  !!activePowerups.magnet);
+  unicornEl.classList.toggle("has-slowmo",  !!activePowerups.slowmo);
+  unicornEl.classList.toggle("has-rainbow", !!activePowerups.rainbow);
+}
 function activatePowerup(type){
   if(activePowerups[type.id]) clearTimeout(activePowerups[type.id].timer);
   const pu=document.getElementById("powerup-bar");
@@ -129,8 +140,11 @@ function activatePowerup(type){
   },1000);
   const endTimer=setTimeout(()=>{
     clearInterval(tick); puEl.remove(); delete activePowerups[type.id];
+    if(type.id==="rainbow"){ rainbowPositions=[]; hideRainbowDots(); }
+    _setPowerupClass();
   },type.dur);
   activePowerups[type.id]={timer:endTimer,tick,el:puEl};
+  _setPowerupClass();
   showBanner(type.emoji+" "+type.label,"powerup",2000);
   playMultiUp(2);
 }
@@ -139,21 +153,75 @@ function clearAllPowerups(){
     clearTimeout(p.timer); clearInterval(p.tick); if(p.el&&p.el.parentNode) p.el.remove();
   });
   activePowerups={};
+  rainbowPositions=[]; hideRainbowDots();
+  _setPowerupClass();
   const pb=document.getElementById("powerup-bar");
   if(pb) pb.innerHTML="";
-}
-function consumeShield(){
-  const p=activePowerups.shield;
-  if(!p) return false;
-  clearTimeout(p.timer); clearInterval(p.tick);
-  if(p.el&&p.el.parentNode) p.el.remove();
-  delete activePowerups.shield;
-  return true;
 }
 function applyMagnet(s){
   if(!activePowerups.magnet||s.kind!=="good") return; // only attract good sprites
   const dx=ux-s.x, dy=uy-s.y, dist=Math.sqrt(dx*dx+dy*dy);
   if(dist<180&&dist>1){ s.x+=dx/dist*3; s.y+=dy/dist*3; s.el.style.left=s.x+"px"; }
+}
+
+// ── Rainbow trail ─────────────────────────────────────────────────────────────
+function initRainbowDots(){
+  for(let i=0;i<RAINBOW_TRAIL_LEN;i++){
+    const d=document.createElement("div");
+    d.className="rainbow-dot"; d.style.display="none";
+    wrap.appendChild(d); rainbowDots.push(d);
+  }
+}
+function hideRainbowDots(){ rainbowDots.forEach(d=>d.style.display="none"); }
+function updateRainbowTrail(){
+  if(!activePowerups.rainbow){ hideRainbowDots(); rainbowPositions=[]; return; }
+  rainbowPositions.push({x:ux,y:uy});
+  if(rainbowPositions.length>RAINBOW_TRAIL_LEN) rainbowPositions.shift();
+  const len=rainbowPositions.length;
+  rainbowDots.forEach((d,i)=>{
+    const pos=rainbowPositions[len-1-i];
+    if(!pos){ d.style.display="none"; return; }
+    const frac=1-(i/RAINBOW_TRAIL_LEN);
+    const sz=Math.round(8+frac*30);
+    const col=RAINBOW_HUE[i%RAINBOW_HUE.length];
+    d.style.cssText=`display:block;width:${sz}px;height:${sz}px;background:${col};`+
+      `opacity:${(frac*0.75).toFixed(2)};left:${pos.x-sz/2}px;top:${pos.y-sz/2}px;`+
+      `filter:blur(${Math.round((1-frac)*3)}px);`;
+  });
+}
+function rainbowCatches(s){
+  if(!activePowerups.rainbow||!rainbowPositions.length) return false;
+  const r2=40*40;
+  for(const p of rainbowPositions){
+    const dx=s.x-p.x,dy=s.y-p.y;
+    if(dx*dx+dy*dy<r2) return true;
+  }
+  return false;
+}
+
+// ══════════════════════════════════════
+//  DYNAMIC ROUND SIZE (grows with level)
+// ══════════════════════════════════════
+function getRoundSize(){ return Math.min(cfg.roundSize+Math.floor((level-1)*1.5),25); }
+function getRoundBonus(){ return cfg.perfBonus+Math.floor((level-1)*0.8); }
+
+// ══════════════════════════════════════
+//  LIVE RANK INDICATOR
+// ══════════════════════════════════════
+function updateRankHud(){
+  const el=document.getElementById("rank-hud"); if(!el) return;
+  const top=loadTop(difficulty);
+  if(!top.length){ el.textContent=""; return; }
+  const rank=top.findIndex(e=>score>=e.score);
+  if(rank===0)     el.textContent="🥇";
+  else if(rank===1)el.textContent="🥈";
+  else if(rank===2)el.textContent="🥉";
+  else if(rank<0&&score>0) el.textContent="";
+  else             el.textContent="";
+  // Show label if beating or at top score
+  if(score>0&&score>=top[0].score) el.textContent="🥇 Nytt rekord!";
+  else if(rank>=0&&rank<3)         el.textContent=[" 🥇"," 🥈"," 🥉"][rank];
+  else                              el.textContent="";
 }
 
 // ══════════════════════════════════════
@@ -253,6 +321,7 @@ function onCatch(starType,x,y){
   flashWrap("rgba(255,220,0,0.30)");
   scorePop(x,y-20,pts,newM);
   catchPop(x,y);
+  updateRankHud();
   const mt=cfg.multiThresh;
   if(streak===mt[1]){ playStreak5(); streakWord("×2! 🌟",x,y); }
   else if(streak===mt[2]){ playWow(); streakWord("×3! 💖",x,y); }
@@ -273,9 +342,20 @@ function onMiss(sx,sy){
   currentSpeed=cfg.speedReset; updateSpeedBar();
   roundMissed++; totalCaught++;
   updateRoundBar(); checkRoundEnd();
-  misses++; updateHearts();
   missPop(sx,sy); playMiss();
-  if(misses>=cfg.maxMisses) endGame();
+
+  if(difficulty==="vuxen"){
+    // Vuxen: miss costs points, not a life
+    const pen=cfg.missPenalty||2;
+    score=Math.max(0,score-pen); scoreEl.textContent=score;
+    const d=document.createElement("div"); d.className="miss-flash";
+    d.textContent="-"+pen+"p";
+    d.style.cssText=`left:${sx}px;top:${sy}px;color:#ff9de2;font-size:13px;`;
+    wrap.appendChild(d); setTimeout(()=>{if(d.parentNode)d.parentNode.removeChild(d);},700);
+  } else {
+    misses++; updateHearts();
+    if(misses>=cfg.maxMisses) endGame();
+  }
 }
 function onBadCatch(type,x,y){
   streak=0; streakEl.textContent=0;
@@ -293,12 +373,7 @@ function onBadCatch(type,x,y){
 }
 function onLifeCatch(type,x,y){
   if(!type.givesLife){
-    // 💔 — shield blocks it (one hit)
-    if(consumeShield()){
-      showBanner("🛡️ Skölden skyddade dig från 💔!","powerup",1800);
-      playMultiUp(2);
-      return;
-    }
+    // 💔
     misses++; updateHearts(); playBadCatch(true);
     wrap.style.outline="4px solid rgba(255,0,0,0.6)";
     setTimeout(()=>wrap.style.outline="",250);
@@ -322,17 +397,18 @@ function onLifeCatch(type,x,y){
 //  ROUND SYSTEM
 // ══════════════════════════════════════
 function checkRoundEnd(){
-  if(roundCaught+roundMissed<cfg.roundSize) return;
+  const rs=getRoundSize();
+  if(roundCaught+roundMissed<rs) return;
   const wasPerfect=roundMissed===0;
   if(wasPerfect){
     perfectRounds++;
-    const bonus=cfg.perfBonus*multiplier;
+    const bonus=getRoundBonus()*multiplier;
     score+=bonus; scoreEl.textContent=score;
     playPerfect();
     showBanner("🌟 PERFEKT omgång "+roundNum+"!  +"+bonus+"p 🎉","perfect",2800);
     perfectFireworks();
   } else {
-    showBanner(`Omgång ${roundNum}: ${roundCaught}/${cfg.roundSize} ✅ ${roundMissed} ❌`,"round-end",1800);
+    showBanner(`Omgång ${roundNum}: ${roundCaught}/${rs} ✅ ${roundMissed} ❌`,"round-end",1800);
   }
   roundNum++; roundCaught=0; roundMissed=0;
   updateRoundBar();
@@ -372,6 +448,8 @@ function loop(ts){
   const moving=joyTouchId!==null||keys["ArrowLeft"]||keys["ArrowRight"]||keys["a"]||keys["d"];
   if(trailTimer>80&&moving){ addTrail(ux,uy); trailTimer=0; }
 
+  updateRainbowTrail();
+
   const speedMult=activePowerups.slowmo?0.4:1.0;
   const cr=cfg.catchRadius+((activeChallenge?.sizeBoost||0)>0?12:0);
   const cr2=cr*cr;
@@ -382,7 +460,8 @@ function loop(ts){
     applyMagnet(s);
     s.el.style.top=s.y+"px";
     const dx=s.x-ux, dy=s.y-uy;
-    if(dx*dx+dy*dy<cr2){
+    const caught=dx*dx+dy*dy<cr2||rainbowCatches(s);
+    if(caught){
       s.el.remove(); stars.splice(i,1);
       if(s.kind==="bad")        onBadCatch(s.type,s.x,s.y);
       else if(s.kind==="life")  onLifeCatch(s.type,s.x,s.y);
@@ -508,6 +587,10 @@ function startGame(){
   comboRing.className=difficulty==="vuxen"?"vuxen":"";
   joyTouchId=null; joyTargetX=null; joyKnob.style.left="50%";
   updateRoundBar(); makeClouds(); applyTheme(1);
+
+  // Init rainbow trail dots on first play
+  if(rainbowDots.length===0) initRainbowDots();
+  rainbowPositions=[]; hideRainbowDots();
 
   overlay.classList.add("hidden");
   quitBtn.classList.add("visible");
