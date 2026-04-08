@@ -715,11 +715,7 @@ document.querySelectorAll(".diff-btn").forEach(btn=>{
 document.querySelectorAll(".tl-tab").forEach(tab=>{
   const show=()=>{
     const d=tab.dataset.d;
-    if(d==="alla"){
-      fetchAllScores().then(r=>{ if(r){ globalScoreCache.alla=r; if(tlShowDiff==="alla") renderTop("alla","",r); }});
-    } else {
-      renderTop(d);
-    }
+    renderTop(d);
   };
   tab.addEventListener("click", show);
   tab.addEventListener("touchend", e=>{ e.preventDefault(); show(); });
