@@ -56,21 +56,7 @@ body {
   padding: 16px 16px 52px;
 }
 
-/* ── Rainbow bar ──────────────────────────────────────────── */
-.rainbow-bar {
-  height: 8px;
-  border-radius: 99px;
-  background: linear-gradient(90deg,
-    #ff0000, #ff8c00, #ffe500, #00c800, #0090ff, #8b00ff, #ff0090, #ff0000);
-  background-size: 200% auto;
-  animation: rainbowScroll 3s linear infinite;
-  margin-bottom: 18px;
-  box-shadow: 0 0 12px rgba(255,255,255,0.4);
-}
-@keyframes rainbowScroll {
-  0%   { background-position: 0% center; }
-  100% { background-position: 200% center; }
-}
+/* (rainbow bar removed — replaced by unicorn glow) */
 
 /* ── Hero ─────────────────────────────────────────────────── */
 .hero { text-align: center; padding: 4px 0 16px; }
@@ -122,35 +108,46 @@ body {
   text-shadow: 0 1px 8px rgba(0,0,0,0.2);
 }
 
-/* Rainbow arc under hero */
-.rainbow-arc {
-  display: flex;
-  gap: 3px;
-  justify-content: center;
-  margin: 12px 0 4px;
+/* ── Unicorn rainbow glow + orbiting sparkles (CPU-light, CSS-only) ── */
+.uni-wrap {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 8px;
 }
-.arc-dot {
-  width: 10px; height: 10px;
+/* Blurred rainbow ring that spins behind the unicorn — single GPU layer */
+.uni-wrap::before {
+  content: '';
+  position: absolute;
+  inset: -14px;
   border-radius: 50%;
-  animation: arcPop 1.4s ease-in-out infinite;
+  background: conic-gradient(
+    #ff4d4d, #ff9900, #ffe600, #33cc33, #00aaff, #9933ff, #ff33cc, #ff4d4d
+  );
+  animation: uniRingSpin 4s linear infinite;
+  filter: blur(11px);
+  opacity: 0.7;
+  z-index: 0;
+  will-change: transform;
 }
-.arc-dot:nth-child(1)  { background:#ff4d4d; animation-delay:0s;    }
-.arc-dot:nth-child(2)  { background:#ff9900; animation-delay:0.1s;  }
-.arc-dot:nth-child(3)  { background:#ffe600; animation-delay:0.2s;  }
-.arc-dot:nth-child(4)  { background:#33cc33; animation-delay:0.3s;  }
-.arc-dot:nth-child(5)  { background:#00aaff; animation-delay:0.4s;  }
-.arc-dot:nth-child(6)  { background:#9933ff; animation-delay:0.5s;  }
-.arc-dot:nth-child(7)  { background:#ff33cc; animation-delay:0.6s;  }
-.arc-dot:nth-child(8)  { background:#ff4d4d; animation-delay:0.7s;  }
-.arc-dot:nth-child(9)  { background:#ff9900; animation-delay:0.8s;  }
-.arc-dot:nth-child(10) { background:#ffe600; animation-delay:0.9s;  }
-.arc-dot:nth-child(11) { background:#33cc33; animation-delay:1.0s;  }
-.arc-dot:nth-child(12) { background:#00aaff; animation-delay:1.1s;  }
-.arc-dot:nth-child(13) { background:#9933ff; animation-delay:1.2s;  }
-.arc-dot:nth-child(14) { background:#ff33cc; animation-delay:1.3s;  }
-@keyframes arcPop {
-  0%, 100% { transform: scaleY(0.7); opacity: 0.6; }
-  50%       { transform: scaleY(1.4); opacity: 1;   }
+@keyframes uniRingSpin { to { transform: rotate(360deg); } }
+.hero-uni { position: relative; z-index: 1; }
+
+/* Orbiting sparkle dots — CSS transforms only, no JS, no RAF */
+.uni-sparks { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.uspark {
+  position: absolute;
+  top: 50%; left: 50%;
+  border-radius: 50%;
+  margin: calc(var(--sz, 7px) / -2) 0 0 calc(var(--sz, 7px) / -2);
+  width: var(--sz, 7px); height: var(--sz, 7px);
+  animation: sparkOrbit var(--spd) linear infinite var(--del);
+  will-change: transform;
+  opacity: 0.9;
+}
+@keyframes sparkOrbit {
+  from { transform: rotate(var(--a)) translateX(var(--r)) scale(1);   }
+  50%  { transform: rotate(calc(var(--a) + 180deg)) translateX(var(--r)) scale(1.5); }
+  to   { transform: rotate(calc(var(--a) + 360deg)) translateX(var(--r)) scale(1);   }
 }
 
 /* ── Cards ────────────────────────────────────────────────── */
@@ -264,22 +261,25 @@ textarea { min-height: 88px; resize: vertical; }
 
 <div class="page">
 
-  <!-- Rainbow top bar -->
-  <div class="rainbow-bar"></div>
-
   <!-- Hero -->
   <div class="hero">
-    <span class="hero-uni">🦄</span>
+    <div class="uni-wrap">
+      <!-- 8 orbiting sparkles: CSS custom props set radius/speed/color inline -->
+      <div class="uni-sparks">
+        <div class="uspark" style="--a:0deg;  --r:62px;--spd:3.2s;--del:-0.0s;--sz:8px; background:#ff4d4d;"></div>
+        <div class="uspark" style="--a:45deg; --r:58px;--spd:4.1s;--del:-0.6s;--sz:6px; background:#ff9900;"></div>
+        <div class="uspark" style="--a:90deg; --r:65px;--spd:3.6s;--del:-1.2s;--sz:9px; background:#ffe600;"></div>
+        <div class="uspark" style="--a:135deg;--r:60px;--spd:4.4s;--del:-0.3s;--sz:6px; background:#33cc33;"></div>
+        <div class="uspark" style="--a:180deg;--r:63px;--spd:3.0s;--del:-0.9s;--sz:8px; background:#00aaff;"></div>
+        <div class="uspark" style="--a:225deg;--r:57px;--spd:4.8s;--del:-1.5s;--sz:7px; background:#9933ff;"></div>
+        <div class="uspark" style="--a:270deg;--r:66px;--spd:3.4s;--del:-0.4s;--sz:6px; background:#ff33cc;"></div>
+        <div class="uspark" style="--a:315deg;--r:59px;--spd:4.2s;--del:-1.8s;--sz:9px; background:#ffffff;"></div>
+      </div>
+      <span class="hero-uni">🦄</span>
+    </div>
     <div class="hb-text">Happy Birthday!</div>
     <div class="hero-name">Ellie fyller 4 år! 🎂</div>
     <p class="hero-sub">✨ Du är inbjuden till kalas! 🎉</p>
-    <div class="rainbow-arc">
-      <div class="arc-dot"></div><div class="arc-dot"></div><div class="arc-dot"></div>
-      <div class="arc-dot"></div><div class="arc-dot"></div><div class="arc-dot"></div>
-      <div class="arc-dot"></div><div class="arc-dot"></div><div class="arc-dot"></div>
-      <div class="arc-dot"></div><div class="arc-dot"></div><div class="arc-dot"></div>
-      <div class="arc-dot"></div><div class="arc-dot"></div>
-    </div>
   </div>
 
   <!-- Party info -->

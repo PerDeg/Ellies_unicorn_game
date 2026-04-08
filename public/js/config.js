@@ -102,8 +102,10 @@ const STREAK_WORDS= ["Bra! 🌟","Häftigt! 💫","Flyger! 🦋","I eld! 🔥","
 //  SPAWN RATES
 // ══════════════════════════════════════
 const POWERUP_SPAWN_CHANCE = 0.05;
-function lifeChance()      { return 0.04; }
-function badChance(level)  { return Math.min(0.10 + level * 0.02, 0.28); }
+function lifeChance()      { return 0.03; }
+// Separate rates for skull (life loss) vs. moon (point penalty)
+function skullChance(level){ return Math.min(0.04 + level * 0.012, 0.12); }
+function moonChance(level) { return Math.min(0.14 + level * 0.022, 0.36); }
 
 // ══════════════════════════════════════
 //  SEEDED RNG

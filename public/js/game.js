@@ -262,11 +262,15 @@ function spawnOneStar(xOver){
     type=activeChallenge.forceType!==undefined?STAR_TYPES[activeChallenge.forceType]:pickStarType();
   } else if(difficulty==="vuxen"){
     const r=seededRng();
-    const lifeP=Math.max(0.04-totalCaught*0.0003,0.01);
-    if(r<lifeP){
+    const lifeP  = Math.max(0.03-totalCaught*0.0002, 0.01);
+    const skulP  = skullChance(level);
+    const moonP  = moonChance(level);
+    if(r < lifeP){
       kind="life"; type=LIFE_TYPES[Math.floor(seededRng()*LIFE_TYPES.length)];
-    } else if(r<lifeP+badChance(level)){
-      kind="bad"; type=BAD_TYPES[Math.floor(seededRng()*BAD_TYPES.length)];
+    } else if(r < lifeP+skulP){
+      kind="bad"; type=BAD_TYPES[0]; // 💀 life-taker
+    } else if(r < lifeP+skulP+moonP){
+      kind="bad"; type=BAD_TYPES[1]; // 🌑 point penalty
     } else {
       kind="good"; type=pickStarType();
     }
@@ -462,7 +466,7 @@ function activateChallenge(){
     if(badge) badge.classList.remove("show");
     playTune("birthday");
   },18000);
-  nextChallengeAt=totalCaught+cfg.roundSize*3+Math.floor(seededRng()*10);
+  nextChallengeAt=totalCaught+cfg.roundSize*7+Math.floor(seededRng()*25);
 }
 // ══════════════════════════════════════
 //  GAME LOOP
@@ -605,7 +609,7 @@ function startGame(){
   score=0; level=1; streak=0; maxStreak=0;
   multiplier=1; maxMulti=1; misses=0; totalCaught=0; perfectRounds=0;
   roundCaught=0; roundMissed=0; roundNum=1;
-  activeChallenge=null; nextChallengeAt=cfg.roundSize*3;
+  activeChallenge=null; nextChallengeAt=cfg.roundSize*8;
   currentSpeed=cfg.baseSpeed;
   resetTheme(); resetRng();
 
