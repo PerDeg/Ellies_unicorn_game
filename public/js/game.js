@@ -41,6 +41,8 @@ let difficulty="barn", cfg=DIFF.barn;
 let activeChallenge=null, nextChallengeAt=30, challengeEndTimer=null;
 let activePowerups={};
 let _cW=0, _cH=0;
+let _lastUx=-1, _lastUy=-1;
+let goodCatchesForLife=0;
 let globalScoreCache={barn:null, vuxen:null};
 let tlShowDiff="barn";
 let bonusTimer=null;
@@ -275,7 +277,13 @@ function spawnOneStar(xOver){
       kind="good"; type=pickStarType();
     }
   } else {
-    kind="good"; type=pickStarType();
+    // Barn: 8% chance of a life sprite
+    const r=seededRng();
+    if(r < 0.08){
+      kind="life"; type=LIFE_TYPES[Math.floor(seededRng()*LIFE_TYPES.length)];
+    } else {
+      kind="good"; type=pickStarType();
+    }
   }
   const el=document.createElement("div");
   el.className=kind==="bad"?"fbad":"fstar";
@@ -313,10 +321,17 @@ function spawnStar(){
   }
   spawnPowerupSprite();
 }
+function getSpawnInterval(){
+  return Math.max(cfg.spawnMin, cfg.spawnBase - level * cfg.spawnLevel);
+}
 function scheduleSpawn(){
-  clearInterval(spawnTimer);
-  const interval=Math.max(cfg.spawnMin,cfg.spawnBase-level*cfg.spawnLevel);
-  spawnTimer=setInterval(spawnStar,interval);
+  clearTimeout(spawnTimer); spawnTimer=null;
+  function tick(){
+    if(!playing) return;
+    spawnStar();
+    spawnTimer=setTimeout(tick, getSpawnInterval());
+  }
+  spawnTimer=setTimeout(tick, getSpawnInterval());
 }
 // ══════════════════════════════════════
 //  CATCH HANDLERS
@@ -326,6 +341,21 @@ function onCatch(starType,x,y){
   score+=pts; scoreEl.textContent=score;
   streak++; totalCaught++; roundCaught++;
   if(streak>maxStreak) maxStreak=streak;
+
+  // Barn: earn a life back every 12 consecutive good catches
+  if(difficulty==="barn"){
+    goodCatchesForLife++;
+    if(goodCatchesForLife>=12){
+      goodCatchesForLife=0;
+      if(misses>0){
+        misses--; updateHearts();
+        showBanner("💚 +1 Liv! (12 bra fångster!)","normal",2000);
+        const _ld=document.createElement("div"); _ld.className="score-pop";
+        _ld.textContent="💚 +❤️"; _ld.style.cssText=`left:${x}px;top:${y}px;font-size:20px;color:#86efac;`;
+        wrap.appendChild(_ld); setTimeout(()=>{if(_ld.parentNode)_ld.parentNode.removeChild(_ld);},900);
+      }
+    }
+  }
   streakEl.textContent=streak;
   currentSpeed=Math.min(currentSpeed+cfg.speedInc,cfg.maxSpeed);
   updateSpeedBar();
@@ -483,8 +513,11 @@ function loop(ts){
     if(keys["ArrowRight"]||keys["d"]) ux=Math.min(_cW-36,ux+spd);
   }
   uy=_cH*FIXED_Y_FRAC;
-  unicornEl.style.left=ux+"px"; unicornEl.style.top=uy+"px";
-  comboRing.style.left=ux+"px"; comboRing.style.top=uy+"px";
+  if(ux!==_lastUx||uy!==_lastUy){
+    unicornEl.style.left=ux+"px"; unicornEl.style.top=uy+"px";
+    comboRing.style.left=ux+"px"; comboRing.style.top=uy+"px";
+    _lastUx=ux; _lastUy=uy;
+  }
 
   trailTimer+=dt;
   const moving=joyTouchId!==null||keys["ArrowLeft"]||keys["ArrowRight"]||keys["a"]||keys["d"];
@@ -520,6 +553,13 @@ function loop(ts){
   rafId=requestAnimationFrame(loop);
 }
 
+// Bounds refresh (called on resize/orientation change)
+function refreshBounds(){
+  _cW=wrap.clientWidth; _cH=wrap.clientHeight;
+  ux=Math.min(ux, _cW-36);
+  _lastUx=-1; _lastUy=-1; // force unicorn position update on next frame
+}
+
 // Joystick
 function updateJoy(clientX){
   const r=joyTrack.getBoundingClientRect(), knobR=27;
@@ -549,7 +589,7 @@ function endGame(){
   if(!playing) return;
   playing=false;
   cancelAnimationFrame(rafId); rafId=null;
-  clearInterval(spawnTimer); spawnTimer=null;
+  clearTimeout(spawnTimer); spawnTimer=null;
   clearTimeout(challengeEndTimer); clearTimeout(bonusTimer);
   clearAllPowerups(); stopMusic();
   wrap.classList.remove("in-bonus");
@@ -584,7 +624,7 @@ function endGame(){
     .then(res=>{
       if(!res) return;
       globalScoreCache[difficulty]=res.list;
-      if(tlShowDiff==="global") renderTop("global",playerName,res.list);
+      if(tlShowDiff==="alla") renderTop("alla",playerName,res.list);
     });
   // Also pre-fetch global list for the other difficulty
   fetchGlobalScores(difficulty).then(r=>{ if(r) globalScoreCache[difficulty]=r; });
@@ -600,7 +640,7 @@ function startGame(){
   cfg=DIFF[difficulty];
 
   cancelAnimationFrame(rafId); rafId=null;
-  clearInterval(spawnTimer); spawnTimer=null;
+  clearTimeout(spawnTimer); spawnTimer=null;
   clearTimeout(challengeEndTimer); clearTimeout(bonusTimer);
   clearAllPowerups(); stopMusic();
   stars.forEach(s=>{ try{ s.el.remove(); }catch{} }); stars=[];
@@ -608,7 +648,7 @@ function startGame(){
 
   score=0; level=1; streak=0; maxStreak=0;
   multiplier=1; maxMulti=1; misses=0; totalCaught=0; perfectRounds=0;
-  roundCaught=0; roundMissed=0; roundNum=1;
+  roundCaught=0; roundMissed=0; roundNum=1; goodCatchesForLife=0;
   activeChallenge=null; nextChallengeAt=cfg.roundSize*8;
   currentSpeed=cfg.baseSpeed;
   resetTheme(); resetRng();
@@ -625,7 +665,7 @@ function startGame(){
   document.getElementById("rank-line").style.display="none";
 
   _cW=wrap.clientWidth; _cH=wrap.clientHeight;
-  ux=_cW/2; uy=_cH*FIXED_Y_FRAC;
+  ux=_cW/2; uy=_cH*FIXED_Y_FRAC; _lastUx=-1; _lastUy=-1;
   unicornEl.classList.toggle("vuxen", difficulty==="vuxen");
   comboRing.className=difficulty==="vuxen"?"vuxen":"";
   joyTouchId=null; joyTargetX=null; joyKnob.style.left="50%";
@@ -675,10 +715,8 @@ document.querySelectorAll(".diff-btn").forEach(btn=>{
 document.querySelectorAll(".tl-tab").forEach(tab=>{
   const show=()=>{
     const d=tab.dataset.d;
-    if(d==="global"){
-      const cached=globalScoreCache[difficulty]||globalScoreCache.barn||null;
-      renderTop("global","",cached||undefined);
-      if(!cached) fetchGlobalScores(difficulty).then(r=>{ if(r){ globalScoreCache[difficulty]=r; if(tlShowDiff==="global") renderTop("global","",r); }});
+    if(d==="alla"){
+      fetchAllScores().then(r=>{ if(r){ globalScoreCache.alla=r; if(tlShowDiff==="alla") renderTop("alla","",r); }});
     } else {
       renderTop(d);
     }
@@ -697,6 +735,9 @@ howBtn.addEventListener("touchend", e=>{ e.preventDefault(); openHow(); });
 howClose.addEventListener("click", closeHow);
 howClose.addEventListener("touchend", e=>{ e.preventDefault(); closeHow(); });
 howModal.addEventListener("click", e=>{ if(e.target===howModal) closeHow(); });
+
+window.addEventListener("resize", refreshBounds);
+window.addEventListener("orientationchange", ()=>setTimeout(refreshBounds, 120));
 
 // ══════════════════════════════════════
 //  INIT
