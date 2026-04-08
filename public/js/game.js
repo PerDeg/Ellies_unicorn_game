@@ -25,6 +25,7 @@ const joyZone     = document.getElementById("joystick-zone");
 const joyKnob     = document.getElementById("joy-knob");
 const joyTrack    = document.getElementById("joy-track");
 const quitBtn     = document.getElementById("quit-btn");
+const soundBtn    = document.getElementById("sound-btn");
 
 // ══════════════════════════════════════
 //  GAME STATE
@@ -490,13 +491,16 @@ function activateChallenge(){
   showBanner("🎯 BONUS: "+c.label,"challenge",3200);
   flashCentre("🎯 BONUSRUNDA!\n"+c.label,1800);
   playWow(); playTune(c.music==="golden"?"golden":"challenge");
+  // Duration shrinks at higher levels (max 18s → min 8s)
+  const bonusDur=Math.max(18000-level*200, 8000);
   challengeEndTimer=setTimeout(()=>{
     activeChallenge=null;
     wrap.classList.remove("in-bonus");
     if(badge) badge.classList.remove("show");
     playTune("birthday");
-  },18000);
-  nextChallengeAt=totalCaught+cfg.roundSize*7+Math.floor(seededRng()*25);
+  },bonusDur);
+  // Gap grows with level so high-level players face more danger
+  nextChallengeAt=totalCaught+cfg.roundSize*7+level*8+Math.floor(seededRng()*25);
 }
 // ══════════════════════════════════════
 //  GAME LOOP
@@ -699,6 +703,21 @@ playBtn.addEventListener("touchend", e=>{ e.preventDefault(); unlockAudio(); sta
 
 quitBtn.addEventListener("click",    ()=>{ if(playing) endGame(); });
 quitBtn.addEventListener("touchend", e=>{ e.preventDefault(); if(playing) endGame(); });
+
+function updateSoundBtn(){
+  const on=isSoundEnabled();
+  soundBtn.textContent=on?"🔊":"🔇";
+  soundBtn.classList.toggle("muted",!on);
+}
+function onSoundToggle(e){
+  e.preventDefault();
+  unlockAudio(); // ensures AudioContext exists on first mobile tap
+  toggleSound();
+  updateSoundBtn();
+}
+soundBtn.addEventListener("click",    onSoundToggle);
+soundBtn.addEventListener("touchend", onSoundToggle);
+updateSoundBtn(); // set initial icon from localStorage
 
 document.querySelectorAll(".diff-btn").forEach(btn=>{
   const select=()=>{

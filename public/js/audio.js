@@ -4,21 +4,38 @@
 // ══════════════════════════════════════
 const AC = window.AudioContext || window.webkitAudioContext;
 let ac = null;
+let masterGain = null;
+
+let soundEnabled = localStorage.getItem("soundEnabled") !== "false";
 
 function unlockAudio() {
-  if (!ac) ac = new AC();
+  if (!ac) {
+    ac = new AC();
+    masterGain = ac.createGain();
+    masterGain.gain.value = soundEnabled ? 1 : 0;
+    masterGain.connect(ac.destination);
+  }
   if (ac.state === "suspended") ac.resume();
   try {
     const b = ac.createBuffer(1, 1, 22050);
     const s = ac.createBufferSource();
-    s.buffer = b; s.connect(ac.destination); s.start(0);
+    s.buffer = b; s.connect(masterGain); s.start(0);
   } catch (e) {}
 }
 
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  localStorage.setItem("soundEnabled", soundEnabled);
+  if (masterGain) masterGain.gain.value = soundEnabled ? 1 : 0;
+  return soundEnabled;
+}
+
+function isSoundEnabled() { return soundEnabled; }
+
 function tone(freq, type, dur, vol, delay = 0) {
-  if (!ac) return;
+  if (!ac || !masterGain) return;
   const o = ac.createOscillator(), g = ac.createGain();
-  o.connect(g); g.connect(ac.destination);
+  o.connect(g); g.connect(masterGain);
   o.type = type;
   const t0 = ac.currentTime + Math.max(0, delay);
   o.frequency.setValueAtTime(freq, t0);
@@ -98,7 +115,7 @@ function playTune(name, loop = true) {
     const dur = b * beat * 0.7;
     const o = ac.createOscillator();
     const g = ac.createGain();
-    o.connect(g); g.connect(ac.destination);
+    o.connect(g); g.connect(masterGain);
     o.type = "sine";
     o.frequency.setValueAtTime(f, t);
     g.gain.setValueAtTime(0, t);

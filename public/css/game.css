@@ -279,6 +279,16 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0020;}
 #quit-btn:active{background:rgba(255,80,80,0.3);border-color:#fca5a5;color:#fca5a5;}
 #quit-btn.visible{display:block;}
 
+/* ── SOUND BUTTON (always visible, top-left) ── */
+#sound-btn{
+  position:absolute;top:max(calc(env(safe-area-inset-top,0px) + 62px),72px);left:12px;z-index:31;
+  background:rgba(255,255,255,0.10);border:1.5px solid rgba(255,255,255,0.30);
+  border-radius:8px;color:#fff;font-size:18px;
+  padding:5px 10px;cursor:pointer;line-height:1;
+}
+#sound-btn:active{background:rgba(255,255,255,0.25);}
+#sound-btn.muted{opacity:0.5;}
+
 /* ── DIFFICULTY LABEL ── */
 .diff-label{
   font-family:"Fredoka One",cursive;font-size:13px;
