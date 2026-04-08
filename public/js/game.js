@@ -34,6 +34,7 @@ let ux=0, uy=0, streak=0, maxStreak=0;
 let multiplier=1, maxMulti=1;
 let misses=0, totalCaught=0, perfectRounds=0;
 let roundCaught=0, roundMissed=0, roundNum=1;
+let goodCatchesForLife=0;
 let currentSpeed=DIFF.barn.baseSpeed;
 let stars=[], spawnTimer=null, rafId=null, trailTimer=0;
 let lastTime=0, playerName="Ellie";
@@ -41,6 +42,7 @@ let difficulty="barn", cfg=DIFF.barn;
 let activeChallenge=null, nextChallengeAt=30, challengeEndTimer=null;
 let activePowerups={};
 let _cW=0, _cH=0;
+let _lastUx=-1, _lastUy=-1;
 let globalScoreCache={barn:null, vuxen:null};
 let tlShowDiff="barn";
 let bonusTimer=null;
@@ -188,8 +190,13 @@ function spawnOneStar(xOver){
       type=activeChallenge?.forceType!==undefined?STAR_TYPES[activeChallenge.forceType]:pickStarType();
     }
   } else {
-    kind="good";
-    type=activeChallenge?.forceType!==undefined?STAR_TYPES[activeChallenge.forceType]:pickStarType();
+    if(seededRng()<0.08){
+      kind="life";
+      type=seededRng()<0.8 ? LIFE_TYPES[1] : LIFE_TYPES[2];
+    } else {
+      kind="good";
+      type=activeChallenge?.forceType!==undefined?STAR_TYPES[activeChallenge.forceType]:pickStarType();
+    }
   }
   const el=document.createElement("div");
   el.className=kind==="bad"?"fbad":"fstar";
@@ -226,10 +233,27 @@ function spawnStar(){
   }
   spawnPowerupSprite();
 }
+function getSpawnInterval(){
+  let interval=Math.max(cfg.spawnMin,cfg.spawnBase-level*cfg.spawnLevel);
+  if(difficulty==="barn"){
+    interval+=Math.min(misses,3)*120;
+    if(streak>=10) interval-=80;
+  } else {
+    interval-=Math.min(level,10)*18;
+    if(streak>=8) interval-=120;
+    if(activeChallenge?.doubleSpawn) interval-=80;
+  }
+  return Math.max(cfg.spawnMin,interval);
+}
 function scheduleSpawn(){
-  clearInterval(spawnTimer);
-  const interval=Math.max(cfg.spawnMin,cfg.spawnBase-level*cfg.spawnLevel);
-  spawnTimer=setInterval(spawnStar,interval);
+  clearTimeout(spawnTimer);
+  spawnTimer=null;
+  const tick=()=>{
+    if(!playing) return;
+    spawnStar();
+    spawnTimer=setTimeout(tick,getSpawnInterval());
+  };
+  spawnTimer=setTimeout(tick,getSpawnInterval());
 }
 // ══════════════════════════════════════
 //  CATCH HANDLERS
@@ -238,6 +262,7 @@ function onCatch(starType,x,y){
   const pts=starType.pts*multiplier;
   score+=pts; scoreEl.textContent=score;
   streak++; totalCaught++; roundCaught++;
+  goodCatchesForLife++;
   if(streak>maxStreak) maxStreak=streak;
   streakEl.textContent=streak;
   currentSpeed=Math.min(currentSpeed+cfg.speedInc,cfg.maxSpeed);
@@ -263,6 +288,14 @@ function onCatch(starType,x,y){
   playCatch(1+streak*0.006);
   updateRoundBar();
   checkRoundEnd();
+  if(difficulty==="barn"&&misses>0&&goodCatchesForLife>=12){
+    misses--; goodCatchesForLife=0;
+    updateHearts();
+    showBanner("💖 Bonusliv för fin streak!","normal",1400);
+    const d=document.createElement("div"); d.className="score-pop";
+    d.textContent="💖 +1 Liv"; d.style.cssText=`left:${x}px;top:${y}px;font-size:20px;color:#f9a8d4;`;
+    wrap.appendChild(d); setTimeout(()=>{if(d.parentNode)d.parentNode.removeChild(d);},900);
+  }
   if(totalCaught>=nextChallengeAt&&!activeChallenge) activateChallenge();
 }
 function onMiss(sx,sy){
@@ -272,13 +305,21 @@ function onMiss(sx,sy){
   updateComboRing(1);
   currentSpeed=cfg.speedReset; updateSpeedBar();
   roundMissed++; totalCaught++;
+  goodCatchesForLife=0;
   updateRoundBar(); checkRoundEnd();
-  misses++; updateHearts();
+  const lifeLoss=(difficulty==="vuxen"&&level>=8)?2:1;
+  misses=Math.min(cfg.maxMisses,misses+lifeLoss); updateHearts();
+  if(difficulty==="vuxen"){
+    const penalty=Math.min(10,2+Math.floor(level/2));
+    score=Math.max(0,score-penalty);
+    scoreEl.textContent=score;
+  }
   missPop(sx,sy); playMiss();
   if(misses>=cfg.maxMisses) endGame();
 }
 function onBadCatch(type,x,y){
   streak=0; streakEl.textContent=0;
+  goodCatchesForLife=0;
   multiplier=1; multiEl.textContent="×1";
   updateComboRing(1);
   currentSpeed=cfg.speedReset; updateSpeedBar();
@@ -299,7 +340,8 @@ function onLifeCatch(type,x,y){
       playMultiUp(2);
       return;
     }
-    misses++; updateHearts(); playBadCatch(true);
+    const lifeLoss=(difficulty==="vuxen"&&level>=7)?2:1;
+    misses=Math.min(cfg.maxMisses,misses+lifeLoss); updateHearts(); playBadCatch(true);
     wrap.style.outline="4px solid rgba(255,0,0,0.6)";
     setTimeout(()=>wrap.style.outline="",250);
     showBanner("💔 -1 Liv!","danger",1600);
@@ -356,7 +398,6 @@ function activateChallenge(){
 function loop(ts){
   if(!playing) return;
   const dt=Math.min(ts-lastTime,50); lastTime=ts;
-  _cW=wrap.clientWidth; _cH=wrap.clientHeight;
 
   const spd=UNICORN_SPEED*(dt/16);
   if(joyTouchId!==null&&joyTargetX!==null) ux=joyTargetX;
@@ -365,8 +406,11 @@ function loop(ts){
     if(keys["ArrowRight"]||keys["d"]) ux=Math.min(_cW-36,ux+spd);
   }
   uy=_cH*FIXED_Y_FRAC;
-  unicornEl.style.left=ux+"px"; unicornEl.style.top=uy+"px";
-  comboRing.style.left=ux+"px"; comboRing.style.top=uy+"px";
+  if(Math.abs(ux-_lastUx)>0.05||Math.abs(uy-_lastUy)>0.05){
+    unicornEl.style.left=ux+"px"; unicornEl.style.top=uy+"px";
+    comboRing.style.left=ux+"px"; comboRing.style.top=uy+"px";
+    _lastUx=ux; _lastUy=uy;
+  }
 
   trailTimer+=dt;
   const moving=joyTouchId!==null||keys["ArrowLeft"]||keys["ArrowRight"]||keys["a"]||keys["d"];
@@ -397,6 +441,9 @@ function loop(ts){
 
   cloudEls.forEach(c=>{ c.x+=c.speed*(dt/16); if(c.x>_cW+200) c.x=-200; c.el.style.left=c.x+"px"; });
   rafId=requestAnimationFrame(loop);
+}
+function refreshBounds(){
+  _cW=wrap.clientWidth; _cH=wrap.clientHeight;
 }
 
 // Joystick
@@ -429,7 +476,7 @@ function endGame(){
   if(!playing) return;
   playing=false;
   cancelAnimationFrame(rafId); rafId=null;
-  clearInterval(spawnTimer); spawnTimer=null;
+  clearTimeout(spawnTimer); spawnTimer=null;
   clearTimeout(challengeEndTimer); clearTimeout(bonusTimer);
   clearAllPowerups(); stopMusic();
   quitBtn.classList.remove("visible");
@@ -478,7 +525,7 @@ function startGame(){
   cfg=DIFF[difficulty];
 
   cancelAnimationFrame(rafId); rafId=null;
-  clearInterval(spawnTimer); spawnTimer=null;
+  clearTimeout(spawnTimer); spawnTimer=null;
   clearTimeout(challengeEndTimer); clearTimeout(bonusTimer);
   clearAllPowerups(); stopMusic();
   stars.forEach(s=>{ try{ s.el.remove(); }catch{} }); stars=[];
@@ -486,6 +533,7 @@ function startGame(){
 
   score=0; level=1; streak=0; maxStreak=0;
   multiplier=1; maxMulti=1; misses=0; totalCaught=0; perfectRounds=0;
+  goodCatchesForLife=0;
   roundCaught=0; roundMissed=0; roundNum=1;
   activeChallenge=null; nextChallengeAt=cfg.roundSize*3;
   currentSpeed=cfg.baseSpeed;
@@ -502,7 +550,7 @@ function startGame(){
   document.getElementById("end-medals").style.display="none";
   document.getElementById("rank-line").style.display="none";
 
-  _cW=wrap.clientWidth; _cH=wrap.clientHeight;
+  refreshBounds();
   ux=_cW/2; uy=_cH*FIXED_Y_FRAC;
   unicornEl.classList.toggle("vuxen", difficulty==="vuxen");
   comboRing.className=difficulty==="vuxen"?"vuxen":"";
@@ -524,6 +572,8 @@ function startGame(){
 // ══════════════════════════════════════
 document.addEventListener("keydown", e=>{ keys[e.key]=true; });
 document.addEventListener("keyup",   e=>{ keys[e.key]=false; });
+window.addEventListener("resize", refreshBounds);
+window.addEventListener("orientationchange", refreshBounds);
 document.addEventListener("touchstart", ()=>unlockAudio(), {once:true,passive:true});
 document.addEventListener("mousedown",  ()=>unlockAudio(), {once:true});
 document.addEventListener("keydown", e=>{ if(e.key==="Escape"&&playing) endGame(); });
