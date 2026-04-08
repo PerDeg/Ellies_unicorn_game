@@ -369,7 +369,7 @@ function onCatch(starType,x,y){
   if(nl>level){ level=nl; levelEl.textContent=level; doLevelUp(); }
   burst(x,y,10);
   flashWrap("rgba(255,220,0,0.30)");
-  scorePop(x,y-20,pts,newM);
+  scorePop(x,y-20,pts,oldM);
   catchPop(x,y);
   updateRankHud();
   const mt=cfg.multiThresh;
