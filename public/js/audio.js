@@ -73,26 +73,40 @@ function playGameOver() {
 // ── Background music ──────────────────────────────────────────────────────────
 const TUNES = {
   birthday: { bpm: 120, notes: [[392,0.75],[392,0.25],[440,1],[392,1],[523,1],[494,2],[392,0.75],[392,0.25],[440,1],[392,1],[587,1],[523,2],[392,0.75],[392,0.25],[784,1],[659,1],[523,1],[494,1],[440,2],[698,0.75],[698,0.25],[659,1],[523,1],[587,1],[523,2]] },
-  normal:   { bpm: 108, notes: [[659,0.5],[659,0.5],[659,1],[659,0.5],[659,0.5],[659,1],[659,0.5],[784,0.5],[523,0.5],[587,0.5],[659,2],[698,0.5],[698,0.75],[698,0.25],[698,0.5],[659,0.25],[659,0.5],[659,0.5],[587,0.5],[587,0.5],[659,0.5],[587,1],[784,1]] },
   challenge:{ bpm: 136, notes: [[784,0.5],[880,0.5],[988,0.5],[1047,0.5],[988,0.5],[880,0.5],[784,1],[698,0.5],[784,0.5],[880,0.5],[988,0.5],[1047,1],[988,0.5],[880,0.5],[784,0.5],[659,0.5],[698,0.5],[784,0.5],[880,1],[784,2]] },
   golden:   { bpm:  88, notes: [[523,1],[659,1],[784,1],[1047,2],[880,1],[784,1],[698,1],[659,2],[587,0.5],[659,0.5],[698,1],[784,1],[880,2],[1047,1],[784,3]] },
 };
 
 let musicTimeout = null;
+let musicNodes = []; // all oscillators belonging to the current tune
 
 function stopMusic() {
   clearTimeout(musicTimeout);
   musicTimeout = null;
+  const now = ac ? ac.currentTime : 0;
+  musicNodes.forEach(n => { try { n.stop(now); } catch (e) {} });
+  musicNodes = [];
 }
 
 function playTune(name, loop = true) {
   if (!ac) return;
-  stopMusic();
-  const tune = TUNES[name] || TUNES.normal;
+  stopMusic(); // kill any currently playing tune immediately
+  const tune = TUNES[name] || TUNES.birthday;
   const beat = 60 / tune.bpm;
   let t = ac.currentTime + 0.1;
   tune.notes.forEach(([f, b]) => {
-    tone(f, "sine", b * beat * 0.7, 0.040, t - ac.currentTime);
+    const dur = b * beat * 0.7;
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.connect(g); g.connect(ac.destination);
+    o.type = "sine";
+    o.frequency.setValueAtTime(f, t);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.040, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + Math.max(dur, 0.05));
+    o.start(t);
+    o.stop(t + Math.max(dur, 0.05) + 0.06);
+    musicNodes.push(o);
     t += b * beat;
   });
   if (loop) {

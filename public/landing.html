@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Ellie fyller 4 år! 🦄</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+*  { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  min-height: 100vh;
+  background: linear-gradient(155deg, #d946ef 0%, #a855f7 38%, #7c3aed 65%, #ec4899 100%);
+  font-family: 'Nunito', sans-serif;
+  color: #fff;
+  overflow-x: hidden;
+}
+
+/* ── Floating stars ───────────────────────────────────────── */
+#stars { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+.star {
+  position: absolute;
+  animation: twinkle linear infinite;
+  opacity: 0.7;
+  user-select: none;
+}
+@keyframes twinkle {
+  0%, 100% { opacity: 0.25; transform: scale(0.85); }
+  50%       { opacity: 0.95; transform: scale(1.25); }
+}
+
+/* ── Page layout ──────────────────────────────────────────── */
+.page {
+  position: relative;
+  z-index: 1;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 20px 16px 48px;
+}
+
+/* ── Hero ─────────────────────────────────────────────────── */
+.hero { text-align: center; padding: 20px 0 12px; }
+
+.hero-uni {
+  font-size: 80px;
+  line-height: 1;
+  display: block;
+  margin-bottom: 10px;
+  animation: uniFloat 2.8s ease-in-out infinite;
+  filter: drop-shadow(0 8px 24px rgba(0,0,0,0.25));
+}
+@keyframes uniFloat {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50%       { transform: translateY(-14px) rotate(3deg); }
+}
+
+.hero h1 {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(2em, 8vw, 2.8em);
+  line-height: 1.15;
+  text-shadow: 0 2px 24px rgba(0,0,0,0.3), 0 0 48px rgba(255,255,255,0.3);
+  letter-spacing: 0.01em;
+}
+.hero .sub {
+  font-size: 1.05em;
+  font-weight: 700;
+  margin-top: 8px;
+  color: rgba(255,255,255,0.9);
+  text-shadow: 0 1px 8px rgba(0,0,0,0.25);
+}
+
+/* ── Cards ────────────────────────────────────────────────── */
+.card {
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1.5px solid rgba(255, 255, 255, 0.32);
+  border-radius: 24px;
+  padding: 20px 18px;
+  margin-bottom: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+}
+.card h2 {
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.35em;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Party info rows ──────────────────────────────────────── */
+.info-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.info-row:last-child { margin-bottom: 0; }
+.info-icon { font-size: 1.35em; flex-shrink: 0; margin-top: 1px; }
+.info-text { line-height: 1.45; font-weight: 700; font-size: 1.02em; }
+.info-text .lbl { display: block; font-size: 0.78em; font-weight: 400; opacity: 0.7; margin-bottom: 1px; }
+
+/* ── Form ─────────────────────────────────────────────────── */
+.field { margin-bottom: 14px; }
+.field:last-of-type { margin-bottom: 0; }
+.field label {
+  display: block;
+  font-weight: 700;
+  font-size: 0.95em;
+  margin-bottom: 6px;
+}
+.req { color: #fde68a; }
+
+input[type="text"],
+textarea {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.20);
+  border: 1.5px solid rgba(255, 255, 255, 0.38);
+  border-radius: 13px;
+  padding: 12px 14px;
+  color: #fff;
+  font-family: 'Nunito', sans-serif;
+  font-size: 1em;
+  font-weight: 700;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+  -webkit-appearance: none;
+}
+input[type="text"]::placeholder,
+textarea::placeholder { color: rgba(255,255,255,0.50); font-weight: 400; }
+input[type="text"]:focus,
+textarea:focus {
+  border-color: rgba(255,255,255,0.75);
+  background: rgba(255,255,255,0.28);
+}
+input[type="text"].error,
+textarea.error { border-color: #fca5a5; }
+textarea { min-height: 90px; resize: vertical; }
+
+.field-err {
+  font-size: 0.82em;
+  color: #fde68a;
+  margin-top: 5px;
+  display: none;
+}
+.field-err.show { display: block; }
+
+/* ── Buttons ──────────────────────────────────────────────── */
+.btn-submit {
+  width: 100%;
+  margin-top: 16px;
+  background: linear-gradient(135deg, #f472b6 0%, #e879f9 100%);
+  border: none;
+  border-radius: 16px;
+  padding: 15px 16px;
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.25em;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.22);
+  transition: transform 0.12s, opacity 0.2s;
+  letter-spacing: 0.02em;
+}
+.btn-submit:active  { transform: scale(0.97); }
+.btn-submit:disabled { opacity: 0.55; cursor: default; transform: none; }
+
+.form-status {
+  margin-top: 12px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.95em;
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: none;
+  line-height: 1.45;
+}
+.form-status.ok  { display: block; background: rgba(134,239,172,0.20); color: #bbf7d0; border: 1px solid rgba(134,239,172,0.35); }
+.form-status.err { display: block; background: rgba(252,165,165,0.18); color: #fca5a5; border: 1px solid rgba(252,165,165,0.35); }
+
+/* ── Play button ──────────────────────────────────────────── */
+.btn-play {
+  display: block;
+  width: 100%;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  border: none;
+  border-radius: 22px;
+  padding: 20px 16px;
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(1.25em, 5vw, 1.55em);
+  color: #fff;
+  text-decoration: none;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 4px 28px rgba(0,0,0,0.28), 0 0 0 3px rgba(255,255,255,0.18);
+  transition: transform 0.12s;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.22);
+  animation: playPulse 2.6s ease-in-out infinite;
+}
+.btn-play:active { transform: scale(0.97); }
+@keyframes playPulse {
+  0%, 100% { box-shadow: 0 4px 28px rgba(0,0,0,0.28), 0 0 0 3px rgba(255,255,255,0.18); }
+  50%       { box-shadow: 0 6px 36px rgba(0,0,0,0.32), 0 0 0 7px rgba(255,255,255,0.30); }
+}
+
+/* ── Footer ───────────────────────────────────────────────── */
+.footer {
+  text-align: center;
+  margin-top: 28px;
+  font-size: 0.85em;
+  opacity: 0.55;
+}
+</style>
+</head>
+<body>
+
+<div id="stars"></div>
+
+<div class="page">
+
+  <!-- Hero -->
+  <div class="hero">
+    <span class="hero-uni">🦄</span>
+    <h1>Ellie fyller 4 år!</h1>
+    <p class="sub">🎂 Du är inbjuden till kalas! 🎉</p>
+  </div>
+
+  <!-- Party info — edit the values below to match your party details -->
+  <div class="card">
+    <h2>🎈 Kalasinformation</h2>
+
+    <div class="info-row">
+      <span class="info-icon">📅</span>
+      <div class="info-text">
+        <span class="lbl">Datum</span>
+        Lördag [dag] [månad] 2026
+      </div>
+    </div>
+
+    <div class="info-row">
+      <span class="info-icon">⏰</span>
+      <div class="info-text">
+        <span class="lbl">Tid</span>
+        14:00 – 17:00
+      </div>
+    </div>
+
+    <div class="info-row">
+      <span class="info-icon">📍</span>
+      <div class="info-text">
+        <span class="lbl">Plats</span>
+        [Adress]
+      </div>
+    </div>
+
+    <div class="info-row">
+      <span class="info-icon">🗓️</span>
+      <div class="info-text">
+        <span class="lbl">OSA senast</span>
+        [Datum]
+      </div>
+    </div>
+  </div>
+
+  <!-- RSVP form -->
+  <div class="card">
+    <h2>✉️ OSA</h2>
+    <form id="rsvp-form" novalidate>
+
+      <div class="field">
+        <label for="rsvp-name">Ditt namn <span class="req">*</span></label>
+        <input type="text" id="rsvp-name" name="name" maxlength="50"
+               placeholder="Skriv ditt namn..." autocomplete="name">
+        <div class="field-err" id="name-err">Vänligen ange ditt namn.</div>
+      </div>
+
+      <div class="field">
+        <label for="rsvp-info">Allergier eller annan information:</label>
+        <textarea id="rsvp-info" name="info" maxlength="500"
+                  placeholder="T.ex. glutenintolerans, nötallergi… (valfritt)"></textarea>
+      </div>
+
+      <button type="submit" class="btn-submit" id="rsvp-btn">Jag kommer! 🎉</button>
+      <div class="form-status" id="form-status"></div>
+    </form>
+  </div>
+
+  <!-- Play game -->
+  <a href="/index.html" class="btn-play">
+    🦄 Spela Ellies Enhörningsspel! ✨
+  </a>
+
+  <div class="footer">Med kärlek till Ellie 💖</div>
+
+</div><!-- .page -->
+
+<script>
+// ── Animated background stars ────────────────────────────────────────────────
+(function () {
+  const container = document.getElementById("stars");
+  const syms = ["⭐","✨","🌟","💫","⭐","✨","⭐","💫","🌟","✨"];
+  for (let i = 0; i < 30; i++) {
+    const el = document.createElement("div");
+    el.className = "star";
+    el.textContent = syms[i % syms.length];
+    el.style.left   = (Math.random() * 98) + "vw";
+    el.style.top    = (Math.random() * 98) + "vh";
+    const size = 0.65 + Math.random() * 1.1;
+    el.style.fontSize          = size + "em";
+    el.style.animationDelay    = (Math.random() * 4)   + "s";
+    el.style.animationDuration = (2.2 + Math.random() * 2.8) + "s";
+    container.appendChild(el);
+  }
+})();
+
+// ── RSVP form ────────────────────────────────────────────────────────────────
+document.getElementById("rsvp-form").addEventListener("submit", async function (e) {
+  e.preventDefault();
+
+  const nameEl   = document.getElementById("rsvp-name");
+  const infoEl   = document.getElementById("rsvp-info");
+  const nameErr  = document.getElementById("name-err");
+  const statusEl = document.getElementById("form-status");
+  const btn      = document.getElementById("rsvp-btn");
+
+  // Reset previous feedback
+  nameErr.classList.remove("show");
+  nameEl.classList.remove("error");
+  statusEl.className = "form-status";
+  statusEl.textContent = "";
+
+  // Validate
+  const name = nameEl.value.trim();
+  if (!name) {
+    nameErr.classList.add("show");
+    nameEl.classList.add("error");
+    nameEl.focus();
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Skickar...";
+
+  try {
+    const res  = await fetch("/api/rsvp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, info: infoEl.value.trim() }),
+    });
+    const data = await res.json();
+
+    if (res.ok && data.ok) {
+      statusEl.className   = "form-status ok";
+      statusEl.textContent = "🎉 Tack " + name + "! Vi ses på kalaset! 🦄";
+      this.reset();
+      btn.textContent = "✓ Skickat!";
+      // Re-enable after a while so the same person can add more info
+      setTimeout(() => {
+        btn.disabled    = false;
+        btn.textContent = "Jag kommer! 🎉";
+      }, 6000);
+    } else {
+      throw new Error(data.error || "Okänt fel");
+    }
+  } catch (err) {
+    statusEl.className   = "form-status err";
+    statusEl.textContent = "😢 Kunde inte skicka: " + err.message + " — försök igen!";
+    btn.disabled    = false;
+    btn.textContent = "Jag kommer! 🎉";
+  }
+});
+</script>
+</body>
+</html>

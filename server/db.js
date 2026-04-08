@@ -18,6 +18,13 @@ async function init() {
       created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW()
     );
     CREATE INDEX IF NOT EXISTS scores_diff_score ON scores (difficulty, score DESC);
+
+    CREATE TABLE IF NOT EXISTS guests (
+      id         SERIAL PRIMARY KEY,
+      name       VARCHAR(50)  NOT NULL,
+      info       TEXT,
+      created_at TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    );
   `);
 }
 
@@ -73,4 +80,11 @@ async function getTop(difficulty) {
   return rows;
 }
 
-module.exports = { init, addScore, getTop };
+async function addGuest({ name, info }) {
+  await pool.query(
+    `INSERT INTO guests (name, info) VALUES ($1, $2)`,
+    [name, info || null]
+  );
+}
+
+module.exports = { init, addScore, getTop, addGuest };

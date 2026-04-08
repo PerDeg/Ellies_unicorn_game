@@ -423,7 +423,7 @@ function activateChallenge(){
   activeChallenge=c;
   showBanner("🎯 UTMANING: "+c.label,"challenge",2800);
   playWow(); playTune(c.music||"challenge");
-  challengeEndTimer=setTimeout(()=>{ activeChallenge=null; playTune("normal"); },18000);
+  challengeEndTimer=setTimeout(()=>{ activeChallenge=null; playTune("birthday"); },18000);
   nextChallengeAt=totalCaught+cfg.roundSize*3+Math.floor(seededRng()*10);
 }
 // ══════════════════════════════════════
@@ -499,7 +499,6 @@ function doLevelUp(){
   showLevelToast("🌈 Nivå "+level+"! ⚡");
   scheduleSpawn();
   setTimeout(()=>playTune("birthday"),160);
-  setTimeout(()=>{ if(playing&&!activeChallenge) playTune("normal"); },13000);
 }
 // ══════════════════════════════════════
 //  END GAME
@@ -599,7 +598,7 @@ function startGame(){
   lastTime=performance.now();
   rafId=requestAnimationFrame(loop);
 
-  setTimeout(()=>{ playTune("birthday"); setTimeout(()=>{ if(playing&&!activeChallenge) playTune("normal"); },13500); },280);
+  setTimeout(()=>playTune("birthday"),280);
 }
 
 // ══════════════════════════════════════

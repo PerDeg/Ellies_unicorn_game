@@ -10,7 +10,12 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// Serve the game (static files from public/)
+// Landing page at root (must come before static middleware)
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "..", "public", "landing.html"));
+});
+
+// Serve all other static files from public/
 app.use(express.static(path.join(__dirname, "..", "public")));
 
 // ── GET /api/scores/:difficulty ───────────────────────────────────────────────
@@ -56,6 +61,24 @@ app.post("/api/scores", async (req, res) => {
   } catch (err) {
     console.error("POST /api/scores error:", err.message);
     res.status(500).json({ error: "Database error" });
+  }
+});
+
+// ── POST /api/rsvp ────────────────────────────────────────────────────────────
+// Body: { name, info }
+app.post("/api/rsvp", async (req, res) => {
+  const { name, info } = req.body;
+  if (!name || typeof name !== "string" || !name.trim()) {
+    return res.status(400).json({ error: "Namn krävs" });
+  }
+  const safeName = name.trim().slice(0, 50);
+  const safeInfo = typeof info === "string" ? info.trim().slice(0, 500) : "";
+  try {
+    await db.addGuest({ name: safeName, info: safeInfo });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("POST /api/rsvp error:", err.message);
+    res.status(500).json({ error: "Kunde inte spara i databasen" });
   }
 });
 
