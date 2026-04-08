@@ -230,6 +230,26 @@ textarea { min-height: 88px; resize: vertical; }
 .form-status.ok  { display:block; background:rgba(134,239,172,0.2); color:#bbf7d0; border:1px solid rgba(134,239,172,0.35); }
 .form-status.err { display:block; background:rgba(252,165,165,0.18); color:#fca5a5; border:1px solid rgba(252,165,165,0.35); }
 
+/* ── RSVP success section ─────────────────────────────────── */
+#rsvp-success { display: none; text-align: center; padding: 4px 0; }
+#rsvp-success .ok-icon { font-size: 3em; margin-bottom: 8px; }
+#rsvp-success .ok-title {
+  font-family: 'Fredoka One', cursive; font-size: 1.3em;
+  color: #bbf7d0; margin-bottom: 6px;
+}
+#rsvp-success .ok-sub { font-size: 0.9em; opacity: 0.7; margin-bottom: 18px; line-height: 1.5; }
+.cal-btns { display: flex; flex-direction: column; gap: 10px; }
+.btn-cal {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 12px 16px; border-radius: 14px; border: none; cursor: pointer;
+  font-family: 'Fredoka One', cursive; font-size: 1.05em; text-decoration: none;
+  transition: transform 0.12s, opacity 0.15s;
+}
+.btn-cal:active { transform: scale(0.97); }
+.btn-cal.google  { background: #fff; color: #1a1a2e; }
+.btn-cal.ical    { background: rgba(255,255,255,0.15); color: #fff; border: 1.5px solid rgba(255,255,255,0.3); }
+.btn-cal.maps    { background: rgba(255,255,255,0.10); color: rgba(255,255,255,0.75); border: 1px solid rgba(255,255,255,0.2); font-size: 0.9em; }
+
 /* ── Play button ──────────────────────────────────────────── */
 .btn-play {
   display: block; width: 100%;
@@ -348,6 +368,26 @@ textarea { min-height: 88px; resize: vertical; }
       <button type="submit" class="btn-submit" id="rsvp-btn">Anmäl mig! 🎉</button>
       <div class="form-status" id="form-status"></div>
     </form>
+
+    <!-- Shown after successful RSVP -->
+    <div id="rsvp-success">
+      <div class="ok-icon">🎉</div>
+      <div class="ok-title" id="ok-title">Vi ses på kalaset!</div>
+      <p class="ok-sub">Söndag 26 april · 13:30–15:00<br>Rönnbyskolans gymnastiksal, Västerås</p>
+      <div class="cal-btns">
+        <a class="btn-cal google" id="cal-google" href="#" target="_blank" rel="noopener">
+          📅 Lägg till i Google Kalender
+        </a>
+        <button class="btn-cal ical" onclick="downloadIcal()">
+          🗓️ Ladda ner till Kalender (.ics)
+        </button>
+        <a class="btn-cal maps"
+           href="https://www.google.com/maps?q=59.64784777027596,16.50923499720162"
+           target="_blank" rel="noopener">
+          📍 Visa på karta
+        </a>
+      </div>
+    </div>
   </div>
 
   <!-- Play game -->
@@ -444,11 +484,21 @@ document.getElementById("rsvp-form").addEventListener("submit", async function (
     const data = await res.json();
 
     if (res.ok && data.ok) {
-      statusEl.className   = "form-status ok";
-      statusEl.textContent = "🎉 Tack " + name + "! Vi ses på kalaset! 🦄";
-      this.reset();
-      btn.textContent = "✓ Skickat!";
-      setTimeout(() => { btn.disabled = false; btn.textContent = "Anmäl mig! 🎉"; }, 6000);
+      // Hide form, show success section with calendar links
+      document.getElementById("rsvp-form").style.display = "none";
+      const success = document.getElementById("rsvp-success");
+      document.getElementById("ok-title").textContent = "Tack " + name + "! 🦄";
+      // Build Google Calendar URL
+      const gcParams = new URLSearchParams({
+        action: "TEMPLATE",
+        text: "Ellies 4-årskalas 🦄",
+        dates: "20260426T133000/20260426T150000",
+        details: "Vi leker och fikar i Rönnbyskolans gymnastiksal. Välkommen!",
+        location: "Rönnbyskolan, Släggkastargatan 13, Västerås",
+      });
+      document.getElementById("cal-google").href =
+        "https://www.google.com/calendar/render?" + gcParams.toString();
+      success.style.display = "block";
     } else {
       throw new Error(data.error || "Okänt fel");
     }
@@ -459,6 +509,32 @@ document.getElementById("rsvp-form").addEventListener("submit", async function (
     btn.textContent = "Anmäl mig! 🎉";
   }
 });
+
+// ── .ics calendar download ────────────────────────────────────────────────────
+function downloadIcal() {
+  const ics = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Ellies Kalas//SV",
+    "BEGIN:VEVENT",
+    "UID:ellies-kalas-20260426@unicorn",
+    "DTSTART:20260426T133000",
+    "DTEND:20260426T150000",
+    "SUMMARY:Ellies 4-årskalas 🦄",
+    "DESCRIPTION:Vi leker och fikar i Rönnbyskolans gymnastiksal. Välkommen!",
+    "LOCATION:Rönnbyskolan\\, Släggkastargatan 13\\, Västerås",
+    "GEO:59.64784777027596;16.50923499720162",
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+
+  const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "ellies-kalas.ics";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
 </script>
 </body>
 </html>
