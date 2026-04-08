@@ -58,11 +58,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0020;}
 #round-fill.clean{background:linear-gradient(90deg,#86efac,#22d3ee);}
 #round-fill.dirty{background:linear-gradient(90deg,#fca5a5,#f472b6);}
 
-/* ── COMBO RING ── */
+/* ── COMBO RING (always visible as hitbox guide) ── */
 #combo-ring{
   position:absolute;border-radius:50%;z-index:9;pointer-events:none;
   transform:translate(-50%,-50%);width:88px;height:88px;
-  border:3px solid transparent;transition:border-color 0.2s;
+  border:2px solid rgba(255,255,255,0.20);transition:border-color 0.2s;
 }
 #combo-ring.vuxen{width:60px;height:60px;}
 #combo-ring.c1{border-color:#a78bfa;}
@@ -209,11 +209,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0020;}
 #end-medals{display:none;font-size:22px;letter-spacing:5px;margin-bottom:6px;text-align:center;max-width:280px;}
 #rank-line{display:none;font-family:"Fredoka One",cursive;font-size:clamp(13px,3.5vw,18px);color:#86efac;margin-bottom:6px;text-align:center;}
 
-#name-section{display:flex;gap:8px;align-items:center;margin-bottom:10px;}
-#name-input{font-family:"Fredoka One",cursive;font-size:17px;text-align:center;padding:8px 14px;border-radius:22px;border:2px solid rgba(255,255,255,0.38);background:rgba(255,255,255,0.11);color:#fff;outline:none;width:148px;}
+#name-section{display:flex;flex-direction:column;gap:8px;align-items:center;margin-bottom:10px;}
+.name-label{font-family:"Fredoka One",cursive;font-size:14px;color:rgba(255,255,255,0.65);margin-bottom:0;}
+#name-input{font-family:"Fredoka One",cursive;font-size:17px;text-align:center;padding:8px 14px;border-radius:22px;border:2px solid rgba(255,255,255,0.38);background:rgba(255,255,255,0.11);color:#fff;outline:none;width:180px;}
 #name-input::placeholder{color:rgba(255,255,255,0.32);}
 #name-input:focus{border-color:rgba(255,220,80,0.7);}
-#play-btn{font-family:"Fredoka One",cursive;font-size:clamp(17px,4.5vw,22px);color:#3a0e8f;background:linear-gradient(135deg,#ffe066 0%,#ffb347 100%);border:none;border-radius:50px;padding:11px 36px;cursor:pointer;box-shadow:0 5px 20px rgba(255,200,0,0.48);transition:transform 0.12s;flex-shrink:0;}
+#play-btn{font-family:"Fredoka One",cursive;font-size:clamp(17px,4.5vw,22px);color:#3a0e8f;background:linear-gradient(135deg,#ffe066 0%,#ffb347 100%);border:none;border-radius:50px;padding:11px 48px;cursor:pointer;box-shadow:0 5px 20px rgba(255,200,0,0.48);transition:transform 0.12s;}
 #play-btn:active{transform:scale(0.93);}
 
 /* How-to button + modal */
@@ -266,12 +267,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0020;}
 /* Global toplist status */
 #tl-global-status{font-family:"Nunito",sans-serif;font-size:11px;color:rgba(255,255,255,0.3);text-align:right;padding:2px 4px;}
 
-/* ── QUIT BUTTON (during play) ── */
+/* ── QUIT BUTTON (during play — sits below speed strip so it doesn't overlap HUD) ── */
 #quit-btn{
   display:none;
-  position:absolute;top:max(env(safe-area-inset-top,0px),10px);right:12px;z-index:31;
+  position:absolute;top:max(calc(env(safe-area-inset-top,0px) + 62px),72px);right:12px;z-index:31;
   font-family:"Fredoka One",cursive;font-size:13px;
-  color:rgba(255,255,255,0.65);background:rgba(255,255,255,0.10);
+  color:rgba(255,255,255,0.65);background:rgba(10,0,30,0.80);
   border:1px solid rgba(255,255,255,0.22);border-radius:20px;
   padding:5px 13px;cursor:pointer;
 }
@@ -344,3 +345,38 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0020;}
 #unicorn.has-rainbow{
   animation:uniRainbow 0.5s linear infinite, uniRainbowBounce 0.7s ease-in-out infinite;
 }
+
+/* ── BONUS ROUND — pulsing golden border ── */
+@keyframes bonusPulse{
+  0%,100%{box-shadow:inset 0 0 0 0 transparent;}
+  50%    {box-shadow:inset 0 0 36px 6px rgba(255,210,0,0.22);}
+}
+#game-wrap.in-bonus{ animation:bonusPulse 1.4s ease-in-out infinite; }
+
+/* ── BONUS ROUND BADGE (persistent indicator) ── */
+#bonus-badge{
+  display:none;
+  position:absolute;top:max(calc(env(safe-area-inset-top,0px) + 62px),72px);left:12px;z-index:31;
+  font-family:"Fredoka One",cursive;font-size:12px;color:#ffe066;
+  background:rgba(60,30,0,0.90);border:1.5px solid rgba(255,200,0,0.55);
+  border-radius:18px;padding:4px 12px;white-space:nowrap;
+  animation:puPulse 1s ease-in-out infinite alternate;
+}
+#bonus-badge.show{display:block;}
+
+/* ── BACK TO LANDING LINK ── */
+.back-link{
+  font-family:"Fredoka One",cursive;font-size:13px;
+  color:rgba(255,255,255,0.40);text-decoration:none;
+  margin-top:4px;margin-bottom:8px;display:inline-block;
+  transition:color 0.2s;
+}
+.back-link:hover,.back-link:active{color:rgba(255,255,255,0.75);}
+
+/* ── ALLA TAB — difficulty badge ── */
+.diff-badge{
+  display:inline-block;font-family:"Fredoka One",cursive;font-size:10px;
+  border-radius:8px;padding:1px 6px;margin-left:4px;vertical-align:middle;
+}
+.diff-badge.barn{ background:rgba(134,239,172,0.2);color:#86efac; }
+.diff-badge.vuxen{ background:rgba(252,165,165,0.2);color:#fca5a5; }

@@ -37,5 +37,6 @@ services:
     environment:
       DATABASE_URL: postgres://unicorn:change_me_please@db:5432/unicorn_game
       PORT: 3000
+      ADMIN_KEY: kalas2026
     ports:
       - "3000:3000"

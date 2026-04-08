@@ -18,6 +18,18 @@ app.get("/", (req, res) => {
 // Serve all other static files from public/
 app.use(express.static(path.join(__dirname, "..", "public")));
 
+// ── GET /api/scores/all ───────────────────────────────────────────────────────
+// Returns the global top-10 combined across all difficulties.
+app.get("/api/scores/all", async (req, res) => {
+  try {
+    const list = await db.getAllTop();
+    res.json({ list });
+  } catch (err) {
+    console.error("GET /api/scores/all error:", err.message);
+    res.status(500).json({ error: "Database error" });
+  }
+});
+
 // ── GET /api/scores/:difficulty ───────────────────────────────────────────────
 // Returns the global top-10 for a given difficulty ("barn" or "vuxen").
 app.get("/api/scores/:difficulty", async (req, res) => {
@@ -79,6 +91,26 @@ app.post("/api/rsvp", async (req, res) => {
   } catch (err) {
     console.error("POST /api/rsvp error:", err.message);
     res.status(500).json({ error: "Kunde inte spara i databasen" });
+  }
+});
+
+// ── GET /admin ────────────────────────────────────────────────────────────────
+app.get("/admin", (req, res) => {
+  res.sendFile(path.join(__dirname, "..", "public", "admin.html"));
+});
+
+// ── GET /api/admin/guests ─────────────────────────────────────────────────────
+// Protected by ADMIN_KEY env var (default: kalas2026)
+const ADMIN_KEY = process.env.ADMIN_KEY || "kalas2026";
+app.get("/api/admin/guests", async (req, res) => {
+  const key = req.headers["x-admin-key"] || req.query.key;
+  if (key !== ADMIN_KEY) return res.status(401).json({ error: "Ej behörig" });
+  try {
+    const guests = await db.getGuests();
+    res.json({ guests });
+  } catch (err) {
+    console.error("GET /api/admin/guests error:", err.message);
+    res.status(500).json({ error: "Database error" });
   }
 });
 

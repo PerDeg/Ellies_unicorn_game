@@ -48,22 +48,22 @@ const STAR_TYPES = [
 ];
 const STAR_WEIGHTS = [40, 25, 18, 12, 5];
 
-// Catching a bad sprite costs points + breaks streak. Avoiding is neutral.
+// Catching a bad sprite breaks streak. 💀 costs a life, 🌑 costs points only.
 const BAD_TYPES = [
-  { emoji: "💀", pts: -3, size: 36, bad: true, label: "💀=-3p" },
-  { emoji: "🌑", pts: -5, size: 38, bad: true, label: "🌑=-5p" },
+  { emoji: "💀", pts: 0,  size: 36, bad: true, takesLife: true, label: "💀 -Liv!"  },
+  { emoji: "🌑", pts: -8, size: 38, bad: true, label: "🌑 -8p" },
 ];
 
-// Life sprites: 💚/☯️ give life, 💔 costs a life
+// Life sprites — all give a life (no negative ones; skull handles that)
 const LIFE_TYPES = [
-  { emoji: "💔", size: 34, givesLife: false, life: true },
-  { emoji: "💚", size: 34, givesLife: true,  life: true },
-  { emoji: "☯️",  size: 34, givesLife: true,  life: true },
+  { emoji: "💚", size: 34, givesLife: true, life: true },
+  { emoji: "☯️",  size: 34, givesLife: true, life: true },
+  { emoji: "🌺", size: 34, givesLife: true, life: true },
 ];
 
 const POWERUP_TYPES = [
   { id: "magnet",  emoji: "🧲", label: "Magnet!",   dur: 6000, color: "#67e8f9" },
-  { id: "slowmo",  emoji: "⏱️",  label: "Slow-mo!",  dur: 5000, color: "#c4b5fd" },
+  { id: "slowmo",  emoji: "⏱️",  label: "Slow-mo!",  dur: 5000, color: "#c4b5fd", minLevel: 3 },
   { id: "rainbow", emoji: "🌈", label: "Regnbåge!", dur: 7000, color: "#ff9de2" },
 ];
 

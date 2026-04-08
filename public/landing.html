@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Ellie fyller 4 år! 🦄</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦄</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -318,9 +319,17 @@ textarea { min-height: 88px; resize: vertical; }
     </div>
   </div>
 
+  <!-- Party description -->
+  <div class="card">
+    <p style="line-height:1.6;font-size:1.02em;font-weight:700;">
+      Du är bjuden på mitt kalas! Vi kommer vara i Rönnbyskolans gymnastiksal och vi kommer leka och fika tillsammans. Välkommen!<br><br>
+      Fyll i namn och annat vi bör känna till nedan. Hoppas vi ses på kalaset!
+    </p>
+  </div>
+
   <!-- RSVP -->
   <div class="card">
-    <h2>✉️ OSA</h2>
+    <h2>🎉 Jag kommer på kalaset!</h2>
     <form id="rsvp-form" novalidate>
 
       <div class="field">
@@ -336,7 +345,7 @@ textarea { min-height: 88px; resize: vertical; }
                   placeholder="T.ex. glutenintolerans, nötallergi… (valfritt)"></textarea>
       </div>
 
-      <button type="submit" class="btn-submit" id="rsvp-btn">Jag kommer! 🎉</button>
+      <button type="submit" class="btn-submit" id="rsvp-btn">Anmäl mig! 🎉</button>
       <div class="form-status" id="form-status"></div>
     </form>
   </div>
@@ -439,7 +448,7 @@ document.getElementById("rsvp-form").addEventListener("submit", async function (
       statusEl.textContent = "🎉 Tack " + name + "! Vi ses på kalaset! 🦄";
       this.reset();
       btn.textContent = "✓ Skickat!";
-      setTimeout(() => { btn.disabled = false; btn.textContent = "Jag kommer! 🎉"; }, 6000);
+      setTimeout(() => { btn.disabled = false; btn.textContent = "Anmäl mig! 🎉"; }, 6000);
     } else {
       throw new Error(data.error || "Okänt fel");
     }
@@ -447,7 +456,7 @@ document.getElementById("rsvp-form").addEventListener("submit", async function (
     statusEl.className   = "form-status err";
     statusEl.textContent = "😢 Kunde inte skicka: " + err.message + " — försök igen!";
     btn.disabled    = false;
-    btn.textContent = "Jag kommer! 🎉";
+    btn.textContent = "Anmäl mig! 🎉";
   }
 });
 </script>

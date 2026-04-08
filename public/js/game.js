@@ -74,45 +74,59 @@ function addToTop(name,sc,ms,mx,pf,caught,d=difficulty){
 }
 
 const MEDALS=["🥇","🥈","🥉","4","5","6","7","8","9","10"];
-function renderTop(d, highlightName="", globalList=undefined){
+function renderTop(d, highlightName="", incomingList=undefined){
   tlShowDiff=d;
   document.querySelectorAll(".tl-tab").forEach(t=>t.classList.toggle("active",t.dataset.d===d));
   const status=document.getElementById("tl-global-status");
+  const head=document.getElementById("tl-head");
   const body=document.getElementById("tl-body");
+  const showDiff=(d==="alla");
+
+  // Update header columns
+  head.innerHTML=showDiff
+    ? `<tr><th>#</th><th>Namn</th><th>Läge</th><th>Poäng</th><th>🔥</th></tr>`
+    : `<tr><th>#</th><th>Namn</th><th>Poäng</th><th>🔥</th></tr>`;
+
   let list;
-  if(d==="global"){
-    if(globalList===undefined){
-      if(globalScoreCache.barn){
-        list=globalScoreCache[difficulty]||globalScoreCache.barn||[];
-        status.textContent="";
+  if(d==="alla"){
+    if(incomingList===undefined){
+      if(globalScoreCache.alla){
+        list=globalScoreCache.alla; status.textContent="";
       } else {
-        body.innerHTML=`<tr><td colspan="4" class="tl-empty">Laddar…</td></tr>`;
+        body.innerHTML=`<tr><td colspan="5" class="tl-empty">Laddar…</td></tr>`;
         status.textContent="";
-        fetchGlobalScores(difficulty).then(r=>{
-          if(r){ globalScoreCache[difficulty]=r; if(tlShowDiff==="global") renderTop("global","",r); }
-          else { body.innerHTML=`<tr><td colspan="4" class="tl-empty">Ej tillgänglig</td></tr>`; }
+        fetchAllScores().then(r=>{
+          if(r){ globalScoreCache.alla=r; if(tlShowDiff==="alla") renderTop("alla","",r); }
+          else { body.innerHTML=`<tr><td colspan="5" class="tl-empty">Ej tillgänglig</td></tr>`; }
         });
         return;
       }
     } else {
-      list=globalList||[];
+      list=incomingList||[];
       status.textContent=list.length?"":"Ej tillgänglig";
     }
   } else {
     list=loadTop(d);
     status.textContent="";
   }
+
   if(!list.length){
-    body.innerHTML=`<tr><td colspan="4" class="tl-empty">Inga poäng än!</td></tr>`;
+    body.innerHTML=`<tr><td colspan="${showDiff?5:4}" class="tl-empty">Inga poäng än!</td></tr>`;
     return;
   }
-  body.innerHTML=list.map((e,i)=>`
-    <tr class="${e.name===highlightName&&(d==="global"||d===difficulty)?'me':''}">
+  body.innerHTML=list.slice(0,10).map((e,i)=>{
+    const isMe=e.name===highlightName&&(d==="alla"||d===difficulty);
+    const diffBadge=showDiff
+      ? `<td><span class="diff-badge ${e.difficulty||''}">${e.difficulty==="barn"?"🐣 Barn":"🔥 Vuxen"}</span></td>`
+      : "";
+    return `<tr class="${isMe?'me':''}">
       <td>${MEDALS[i]||i+1}</td>
       <td>${e.name||"Anonym"}</td>
+      ${diffBadge}
       <td>${e.score}</td>
       <td>${e.maxStreak||0}</td>
-    </tr>`).join("");
+    </tr>`;
+  }).join("");
 }
 // ══════════════════════════════════════
 //  POWER-UPS
@@ -161,7 +175,10 @@ function clearAllPowerups(){
 function applyMagnet(s){
   if(!activePowerups.magnet||s.kind!=="good") return; // only attract good sprites
   const dx=ux-s.x, dy=uy-s.y, dist=Math.sqrt(dx*dx+dy*dy);
-  if(dist<180&&dist>1){ s.x+=dx/dist*3; s.y+=dy/dist*3; s.el.style.left=s.x+"px"; }
+  if(dist<320&&dist>1){
+    const force=8*(1-dist/320); // stronger when closer
+    s.x+=dx/dist*force; s.y+=dy/dist*force; s.el.style.left=s.x+"px";
+  }
 }
 
 // ── Rainbow trail ─────────────────────────────────────────────────────────────
@@ -239,25 +256,22 @@ function getMultiplier(str){
 function spawnOneStar(xOver){
   if(!playing) return;
   let type, kind="good";
-  if(difficulty==="vuxen"){
+  if(activeChallenge){
+    // Bonus round — only good sprites, no bad/life
+    kind="good";
+    type=activeChallenge.forceType!==undefined?STAR_TYPES[activeChallenge.forceType]:pickStarType();
+  } else if(difficulty==="vuxen"){
     const r=seededRng();
-    const badLifeP =Math.min(0.02+totalCaught*0.0008,0.10);
-    const goodLifeP=Math.max(0.04-totalCaught*0.0003,0.01);
-    const totalLP  =badLifeP+goodLifeP;
-    if(r<totalLP){
-      kind="life";
-      type=seededRng()<badLifeP/totalLP
-        ? LIFE_TYPES[0]
-        : LIFE_TYPES[1+Math.floor(seededRng()*2)];
-    } else if(r<totalLP+badChance(level)){
+    const lifeP=Math.max(0.04-totalCaught*0.0003,0.01);
+    if(r<lifeP){
+      kind="life"; type=LIFE_TYPES[Math.floor(seededRng()*LIFE_TYPES.length)];
+    } else if(r<lifeP+badChance(level)){
       kind="bad"; type=BAD_TYPES[Math.floor(seededRng()*BAD_TYPES.length)];
     } else {
-      kind="good";
-      type=activeChallenge?.forceType!==undefined?STAR_TYPES[activeChallenge.forceType]:pickStarType();
+      kind="good"; type=pickStarType();
     }
   } else {
-    kind="good";
-    type=activeChallenge?.forceType!==undefined?STAR_TYPES[activeChallenge.forceType]:pickStarType();
+    kind="good"; type=pickStarType();
   }
   const el=document.createElement("div");
   el.className=kind==="bad"?"fbad":"fstar";
@@ -271,8 +285,9 @@ function spawnOneStar(xOver){
 }
 function spawnPowerupSprite(){
   if(Math.random()>POWERUP_SPAWN_CHANCE) return;
-  const type=POWERUP_TYPES[Math.floor(Math.random()*POWERUP_TYPES.length)];
-  if(activePowerups[type.id]) return;
+  const available=POWERUP_TYPES.filter(t=>!activePowerups[t.id]&&(!t.minLevel||level>=t.minLevel));
+  if(!available.length) return;
+  const type=available[Math.floor(Math.random()*available.length)];
   const el=document.createElement("div");
   el.className="fstar";
   el.textContent=type.emoji;
@@ -335,11 +350,8 @@ function onCatch(starType,x,y){
   if(totalCaught>=nextChallengeAt&&!activeChallenge) activateChallenge();
 }
 function onMiss(sx,sy){
-  if(streak>=5) flashCentre("Hoppsan! 😅\nStreak bruten…",900);
-  streak=0; streakEl.textContent=0;
-  multiplier=1; multiEl.textContent="×1";
-  updateComboRing(1);
-  currentSpeed=cfg.speedReset; updateSpeedBar();
+  // Missing a good sprite does NOT break streak — only catching bad sprites does
+  currentSpeed=Math.max(currentSpeed-0.3,cfg.baseSpeed); updateSpeedBar();
   roundMissed++; totalCaught++;
   updateRoundBar(); checkRoundEnd();
   missPop(sx,sy); playMiss();
@@ -358,18 +370,35 @@ function onMiss(sx,sy){
   }
 }
 function onBadCatch(type,x,y){
+  // Always break streak on catching any bad sprite
   streak=0; streakEl.textContent=0;
   multiplier=1; multiEl.textContent="×1";
   updateComboRing(1);
   currentSpeed=cfg.speedReset; updateSpeedBar();
-  playBadCatch(false);
-  score=Math.max(0,score+type.pts); scoreEl.textContent=score;
-  flashWrap("rgba(255,0,0,0.5)");
-  showBanner(type.emoji+" "+type.pts+"p  Streak bruten!","danger",1400);
-  const d=document.createElement("div"); d.className="miss-flash";
-  d.textContent=type.emoji+" "+type.pts+"p";
-  d.style.cssText=`left:${x}px;top:${y}px;color:#ff4444;font-size:18px;`;
-  wrap.appendChild(d); setTimeout(()=>{if(d.parentNode)d.parentNode.removeChild(d);},800);
+
+  if(type.takesLife){
+    // 💀 — costs a life
+    misses++; updateHearts();
+    playBadCatch(true);
+    wrap.style.outline="4px solid rgba(255,0,0,0.7)";
+    setTimeout(()=>wrap.style.outline="",300);
+    showBanner("💀 -1 Liv! Streak bruten!","danger",2000);
+    flashCentre("💀 MINUS ETT LIV!",1200);
+    const d=document.createElement("div"); d.className="miss-flash";
+    d.textContent="💀 -Liv!"; d.style.cssText=`left:${x}px;top:${y}px;color:#ff4444;font-size:20px;`;
+    wrap.appendChild(d); setTimeout(()=>{if(d.parentNode)d.parentNode.removeChild(d);},900);
+    if(misses>=cfg.maxMisses) endGame();
+  } else {
+    // 🌑 — big point penalty
+    playBadCatch(false);
+    score=Math.max(0,score+type.pts); scoreEl.textContent=score;
+    flashWrap("rgba(255,0,0,0.45)");
+    showBanner(type.emoji+" "+type.pts+"p  Streak bruten!","danger",1400);
+    const d=document.createElement("div"); d.className="miss-flash";
+    d.textContent=type.emoji+" "+type.pts+"p";
+    d.style.cssText=`left:${x}px;top:${y}px;color:#ff4444;font-size:18px;`;
+    wrap.appendChild(d); setTimeout(()=>{if(d.parentNode)d.parentNode.removeChild(d);},800);
+  }
 }
 function onLifeCatch(type,x,y){
   if(!type.givesLife){
@@ -421,9 +450,18 @@ function activateChallenge(){
   clearTimeout(challengeEndTimer);
   const c=CHALLENGES[Math.floor(seededRng()*CHALLENGES.length)];
   activeChallenge=c;
-  showBanner("🎯 UTMANING: "+c.label,"challenge",2800);
-  playWow(); playTune(c.music||"challenge");
-  challengeEndTimer=setTimeout(()=>{ activeChallenge=null; playTune("birthday"); },18000);
+  wrap.classList.add("in-bonus");
+  const badge=document.getElementById("bonus-badge");
+  if(badge){ badge.textContent="🎯 "+c.label; badge.classList.add("show"); }
+  showBanner("🎯 BONUS: "+c.label,"challenge",3200);
+  flashCentre("🎯 BONUSRUNDA!\n"+c.label,1800);
+  playWow(); playTune(c.music==="golden"?"golden":"challenge");
+  challengeEndTimer=setTimeout(()=>{
+    activeChallenge=null;
+    wrap.classList.remove("in-bonus");
+    if(badge) badge.classList.remove("show");
+    playTune("birthday");
+  },18000);
   nextChallengeAt=totalCaught+cfg.roundSize*3+Math.floor(seededRng()*10);
 }
 // ══════════════════════════════════════
@@ -510,6 +548,8 @@ function endGame(){
   clearInterval(spawnTimer); spawnTimer=null;
   clearTimeout(challengeEndTimer); clearTimeout(bonusTimer);
   clearAllPowerups(); stopMusic();
+  wrap.classList.remove("in-bonus");
+  const _bb=document.getElementById("bonus-badge"); if(_bb) _bb.classList.remove("show");
   quitBtn.classList.remove("visible");
 
   const list=addToTop(playerName,score,maxStreak,maxMulti,perfectRounds,totalCaught,difficulty);

@@ -3,15 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Ellies Enhörningsspel 🦄</title>
+<title>Ellies Enhörningsspel</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦄</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/game.css">
 </head>
 <body>
 
-<!-- Outer shell: constrains width on desktop -->
 <div id="outer-shell">
-
 <div id="game-wrap">
 
   <!-- HUD -->
@@ -28,8 +27,10 @@
   </div>
   <div id="speed-strip"><div id="speed-fill"></div></div>
 
-  <!-- Quit button (visible during play) -->
+  <!-- Quit button (visible during play, below HUD) -->
   <button id="quit-btn">Avsluta ✕</button>
+  <!-- Bonus round badge -->
+  <div id="bonus-badge"></div>
 
   <!-- Round progress bar -->
   <div id="round-bar-wrap">
@@ -84,23 +85,23 @@
 
       <div class="how-section" id="how-vuxen" style="display:none">
         <h3>☠️ Farliga sprites — undvik!</h3>
-        <div class="how-row"><span class="how-icon">💀</span>−3p om du tar dem <span class="how-badge bad">undvik</span></div>
-        <div class="how-row"><span class="how-icon">🌑</span>−5p om du tar dem <span class="how-badge bad">undvik</span></div>
-        <div class="how-row"><span class="how-icon">💔</span>Tappar ett liv — <strong>skölden</strong> skyddar! <span class="how-badge bad">undvik</span></div>
+        <div class="how-row"><span class="how-icon">💀</span>Tappar ett liv! <span class="how-badge bad">undvik</span></div>
+        <div class="how-row"><span class="how-icon">🌑</span>−8p om du tar dem <span class="how-badge bad">undvik</span></div>
         <h3 style="margin-top:8px">💚 Bonussprites — fånga!</h3>
         <div class="how-row"><span class="how-icon">💚</span>Får ett extra liv <span class="how-badge life">fånga</span></div>
         <div class="how-row"><span class="how-icon">☯️</span>Får ett extra liv <span class="how-badge life">fånga</span></div>
+        <div class="how-row"><span class="how-icon">🌺</span>Får ett extra liv <span class="how-badge life">fånga</span></div>
         <h3 style="margin-top:8px">⚡ Power-ups — fånga!</h3>
         <div class="how-row"><span class="how-icon">🧲</span>Magnet — drar till sig poängstjärnor</div>
-        <div class="how-row"><span class="how-icon">⏱️</span>Slow-mo — saktar ner allt</div>
+        <div class="how-row"><span class="how-icon">⏱️</span>Slow-mo — saktar ner allt (högre nivåer)</div>
         <div class="how-row"><span class="how-icon">🌈</span>Regnbåge — osynligt läge, fångar allt!</div>
-        <div class="how-row" style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px">Att undvika farliga sprites kostar ingenting.</div>
       </div>
 
       <div class="how-section">
         <h3>🔥 Combo</h3>
         <div class="how-row"><span class="how-icon">🔥</span>Streak ger multiplikator upp till ×6</div>
         <div class="how-row"><span class="how-icon">💚</span>Perfekt omgång = bonuspoäng!</div>
+        <div class="how-row"><span class="how-icon">🎯</span>Streak bryts bara av farliga sprites</div>
       </div>
 
       <button id="how-close">Stäng</button>
@@ -139,10 +140,14 @@
       </div>
 
       <div id="name-section">
+        <p class="name-label">Skriv in ditt namn</p>
         <input id="name-input" type="text" maxlength="14" placeholder="Ditt namn…"
                autocomplete="off" autocorrect="off" spellcheck="false">
         <button id="play-btn">Spela! ✨</button>
       </div>
+
+      <!-- Back to landing page -->
+      <a href="/" class="back-link">← Tillbaka till kalasinbjudan</a>
     </div>
 
     <!-- Toplist -->
@@ -151,11 +156,11 @@
       <div id="tl-tabs">
         <div class="tl-tab active" data-d="barn">🐣 Barn</div>
         <div class="tl-tab"        data-d="vuxen">🔥 Vuxen</div>
-        <div class="tl-tab"        data-d="global">🌐 Global</div>
+        <div class="tl-tab"        data-d="alla">🌐 Alla</div>
       </div>
       <div id="tl-global-status"></div>
       <table id="tl-table">
-        <thead><tr><th>#</th><th>Namn</th><th>Poäng</th><th>🔥</th></tr></thead>
+        <thead id="tl-head"><tr><th>#</th><th>Namn</th><th>Poäng</th><th>🔥</th></tr></thead>
         <tbody id="tl-body"></tbody>
       </table>
     </div>

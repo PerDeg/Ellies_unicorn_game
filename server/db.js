@@ -80,6 +80,21 @@ async function getTop(difficulty) {
   return rows;
 }
 
+/**
+ * Return top-10 across all difficulties combined.
+ */
+async function getAllTop() {
+  const { rows } = await pool.query(
+    `SELECT id, name, score, difficulty,
+            max_streak AS "maxStreak", max_multi AS "maxMulti",
+            perfect_rounds AS "perfectRounds", caught
+     FROM scores
+     ORDER BY score DESC, created_at ASC
+     LIMIT 10`
+  );
+  return rows;
+}
+
 async function addGuest({ name, info }) {
   await pool.query(
     `INSERT INTO guests (name, info) VALUES ($1, $2)`,
@@ -87,4 +102,11 @@ async function addGuest({ name, info }) {
   );
 }
 
-module.exports = { init, addScore, getTop, addGuest };
+async function getGuests() {
+  const { rows } = await pool.query(
+    `SELECT id, name, info, created_at FROM guests ORDER BY created_at ASC`
+  );
+  return rows;
+}
+
+module.exports = { init, addScore, getTop, getAllTop, addGuest, getGuests };
