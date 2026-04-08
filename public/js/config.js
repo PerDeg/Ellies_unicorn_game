@@ -5,7 +5,8 @@
 const DIFF = {
   barn: {
     label:       "Barn",
-    maxMisses:   5,
+    maxMisses:   3,
+    startMisses: 0,    // starts with all 3 lives
     baseSpeed:   1.2,
     speedInc:    0.015,  // slow build — takes much longer to reach max
     maxSpeed:    7.0,    // higher ceiling
@@ -20,7 +21,8 @@ const DIFF = {
   },
   vuxen: {
     label:       "Vuxen",
-    maxMisses:   3,      // lives only lost from catching 💔
+    maxMisses:   3,
+    startMisses: 2,      // starts with only 1 life out of max 3
     baseSpeed:   2.5,
     speedInc:    0.22,
     maxSpeed:    16.0,   // higher ceiling

@@ -647,7 +647,7 @@ function startGame(){
   wrap.querySelectorAll(".trail,.particle,.catch-pop,.miss-flash,.firework,.score-pop").forEach(e=>e.remove());
 
   score=0; level=1; streak=0; maxStreak=0;
-  multiplier=1; maxMulti=1; misses=0; totalCaught=0; perfectRounds=0;
+  multiplier=1; maxMulti=1; misses=cfg.startMisses||0; totalCaught=0; perfectRounds=0;
   roundCaught=0; roundMissed=0; roundNum=1; goodCatchesForLife=0;
   activeChallenge=null; nextChallengeAt=cfg.roundSize*8;
   currentSpeed=cfg.baseSpeed;
