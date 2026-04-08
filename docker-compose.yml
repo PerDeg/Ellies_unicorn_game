@@ -1,4 +1,4 @@
-# ── Ellies Unicorn Game — full stack ──────────────────────────────────────────
+# Ellies Unicorn Game - full stack
 # Usage on Unraid (with the "Compose Manager" plugin):
 #   1. Clone this repo to /mnt/user/appdata/unicorn-game/
 #   2. Edit POSTGRES_PASSWORD below
@@ -7,18 +7,18 @@
 #
 # Usage locally:
 #   docker compose up -d
+
 services:
   db:
     image: postgres:16-alpine
     container_name: unicorn-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB:       unicorn_game
-      POSTGRES_USER:     unicorn
+      POSTGRES_DB: unicorn_game
+      POSTGRES_USER: unicorn
       POSTGRES_PASSWORD: change_me_please
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
-    # No ports exposed — only the game container talks to it over the internal network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U unicorn -d unicorn_game"]
       interval: 10s
