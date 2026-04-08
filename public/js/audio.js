@@ -17,9 +17,10 @@ function unlockAudio() {
   }
   if (ac.state === "suspended") ac.resume();
   try {
+    // iOS requires the unlock buffer to connect directly to destination
     const b = ac.createBuffer(1, 1, 22050);
     const s = ac.createBufferSource();
-    s.buffer = b; s.connect(masterGain); s.start(0);
+    s.buffer = b; s.connect(ac.destination); s.start(0);
   } catch (e) {}
 }
 
@@ -34,6 +35,7 @@ function isSoundEnabled() { return soundEnabled; }
 
 function tone(freq, type, dur, vol, delay = 0) {
   if (!ac || !masterGain) return;
+  if (ac.state === "suspended") ac.resume();
   const o = ac.createOscillator(), g = ac.createGain();
   o.connect(g); g.connect(masterGain);
   o.type = type;
@@ -107,6 +109,7 @@ function stopMusic() {
 
 function playTune(name, loop = true) {
   if (!ac) return;
+  if (ac.state === "suspended") ac.resume();
   stopMusic(); // kill any currently playing tune immediately
   const tune = TUNES[name] || TUNES.birthday;
   const beat = 60 / tune.bpm;
