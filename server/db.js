@@ -22,9 +22,11 @@ async function init() {
     CREATE TABLE IF NOT EXISTS guests (
       id         SERIAL PRIMARY KEY,
       name       VARCHAR(50)  NOT NULL,
+      phone      VARCHAR(20),
       info       TEXT,
       created_at TIMESTAMPTZ  NOT NULL DEFAULT NOW()
     );
+    ALTER TABLE guests ADD COLUMN IF NOT EXISTS phone VARCHAR(20);
   `);
 }
 
@@ -95,16 +97,16 @@ async function getAllTop() {
   return rows;
 }
 
-async function addGuest({ name, info }) {
+async function addGuest({ name, phone, info }) {
   await pool.query(
-    `INSERT INTO guests (name, info) VALUES ($1, $2)`,
-    [name, info || null]
+    `INSERT INTO guests (name, phone, info) VALUES ($1, $2, $3)`,
+    [name, phone || null, info || null]
   );
 }
 
 async function getGuests() {
   const { rows } = await pool.query(
-    `SELECT id, name, info, created_at FROM guests ORDER BY created_at ASC`
+    `SELECT id, name, phone, info, created_at FROM guests ORDER BY created_at ASC`
   );
   return rows;
 }

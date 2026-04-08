@@ -141,6 +141,7 @@ tbody td { padding: 10px 10px; vertical-align: top; line-height: 1.4; }
           <tr>
             <th>#</th>
             <th>Namn</th>
+            <th>Mobilnummer</th>
             <th>Allergier / Info</th>
             <th>Anmält</th>
           </tr>
@@ -201,11 +202,17 @@ function showGuests() {
     <div class="stat-pill">${guestData.length}<span>anmälda</span></div>
     ${withInfo ? `<div class="stat-pill">${withInfo}<span>med allergi/info</span></div>` : ""}
   `;
+  if (!guestData.length) {
+    document.getElementById("guest-body").innerHTML = `<tr><td colspan="5" class="empty">Inga anmälningar än 😊</td></tr>`;
+    document.getElementById("login-section").style.display = "none";
+    document.getElementById("guest-section").style.display = "block";
+    return;
+  }
 
   // Table
   const body = document.getElementById("guest-body");
   if (!guestData.length) {
-    body.innerHTML = `<tr><td colspan="4" class="empty">Inga anmälningar än 😊</td></tr>`;
+    body.innerHTML = `<tr><td colspan="5" class="empty">Inga anmälningar än 😊</td></tr>`;
     return;
   }
   body.innerHTML = guestData.map((g, i) => {
@@ -215,6 +222,7 @@ function showGuests() {
     return `<tr>
       <td class="td-num">${i + 1}</td>
       <td class="td-name">${esc(g.name)}</td>
+      <td class="td-info">${esc(g.phone || "")}</td>
       <td class="td-info">${esc(g.info || "")}</td>
       <td class="td-date">${dateStr}</td>
     </tr>`;
@@ -226,9 +234,9 @@ function esc(s) {
 }
 
 function exportCSV() {
-  const rows = [["#","Namn","Allergier/Info","Anmält"]];
+  const rows = [["#","Namn","Mobilnummer","Allergier/Info","Anmält"]];
   guestData.forEach((g, i) => {
-    rows.push([i + 1, g.name, g.info || "", new Date(g.created_at).toLocaleString("sv-SE")]);
+    rows.push([i + 1, g.name, g.phone || "", g.info || "", new Date(g.created_at).toLocaleString("sv-SE")]);
   });
   const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
   const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });

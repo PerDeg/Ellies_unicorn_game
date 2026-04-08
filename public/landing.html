@@ -184,7 +184,7 @@ body {
 .field label { display: block; font-weight: 700; font-size: 0.95em; margin-bottom: 6px; }
 .req { color: #fde68a; }
 
-input[type="text"], textarea {
+input[type="text"], input[type="tel"], textarea {
   width: 100%;
   background: rgba(255,255,255,0.18);
   border: 1.5px solid rgba(255,255,255,0.36);
@@ -197,12 +197,12 @@ input[type="text"], textarea {
   transition: border-color 0.2s, background 0.2s;
   -webkit-appearance: none;
 }
-input[type="text"]::placeholder, textarea::placeholder { color: rgba(255,255,255,0.48); font-weight: 400; }
-input[type="text"]:focus, textarea:focus {
+input[type="text"]::placeholder, input[type="tel"]::placeholder, textarea::placeholder { color: rgba(255,255,255,0.48); font-weight: 400; }
+input[type="text"]:focus, input[type="tel"]:focus, textarea:focus {
   border-color: rgba(255,255,255,0.75);
   background: rgba(255,255,255,0.26);
 }
-input[type="text"].error { border-color: #fca5a5; }
+input[type="text"].error, input[type="tel"].error { border-color: #fca5a5; }
 textarea { min-height: 88px; resize: vertical; }
 
 .field-err { font-size: 0.82em; color: #fde68a; margin-top: 5px; display: none; }
@@ -297,7 +297,7 @@ textarea { min-height: 88px; resize: vertical; }
       </div>
       <span class="hero-uni">🦄</span>
     </div>
-    <div class="hb-text">Happy Birthday!</div>
+    <div class="hb-text">Födelsedagskalas</div>
     <div class="hero-name">Ellie fyller 4 år! 🎂</div>
     <p class="hero-sub">✨ Du är inbjuden till kalas! 🎉</p>
   </div>
@@ -342,7 +342,7 @@ textarea { min-height: 88px; resize: vertical; }
   <!-- Party description -->
   <div class="card">
     <p style="line-height:1.6;font-size:1.02em;font-weight:700;">
-      Du är bjuden på mitt kalas! Vi kommer vara i Rönnbyskolans gymnastiksal och vi kommer leka och fika tillsammans. Välkommen!<br><br>
+      Kom och fira med mig! Vi kommer vara i Rönnbyskolans gymnastiksal och leka och ha skoj tillsammans. Jag bjuder på fika. Välkommen!<br><br>
       Fyll i namn och annat vi bör känna till nedan. Hoppas vi ses på kalaset!
     </p>
   </div>
@@ -357,6 +357,13 @@ textarea { min-height: 88px; resize: vertical; }
         <input type="text" id="rsvp-name" name="name" maxlength="50"
                placeholder="Skriv ditt namn..." autocomplete="name">
         <div class="field-err" id="name-err">Vänligen ange ditt namn.</div>
+      </div>
+
+      <div class="field">
+        <label for="rsvp-phone">Mobilnummer <span class="req">*</span></label>
+        <input type="tel" id="rsvp-phone" name="phone" maxlength="20"
+               placeholder="T.ex. 070-123 45 67" autocomplete="tel">
+        <div class="field-err" id="phone-err">Vänligen ange ditt mobilnummer.</div>
       </div>
 
       <div class="field">
@@ -454,23 +461,28 @@ document.getElementById("rsvp-form").addEventListener("submit", async function (
   e.preventDefault();
 
   const nameEl   = document.getElementById("rsvp-name");
+  const phoneEl  = document.getElementById("rsvp-phone");
   const infoEl   = document.getElementById("rsvp-info");
   const nameErr  = document.getElementById("name-err");
+  const phoneErr = document.getElementById("phone-err");
   const statusEl = document.getElementById("form-status");
   const btn      = document.getElementById("rsvp-btn");
 
-  nameErr.classList.remove("show");
-  nameEl.classList.remove("error");
+  nameErr.classList.remove("show");  nameEl.classList.remove("error");
+  phoneErr.classList.remove("show"); phoneEl.classList.remove("error");
   statusEl.className = "form-status";
   statusEl.textContent = "";
 
-  const name = nameEl.value.trim();
+  const name  = nameEl.value.trim();
+  const phone = phoneEl.value.trim();
+  let valid = true;
   if (!name) {
-    nameErr.classList.add("show");
-    nameEl.classList.add("error");
-    nameEl.focus();
-    return;
+    nameErr.classList.add("show"); nameEl.classList.add("error"); valid = false;
   }
+  if (!phone) {
+    phoneErr.classList.add("show"); phoneEl.classList.add("error"); valid = false;
+  }
+  if (!valid) { if (!name) nameEl.focus(); else phoneEl.focus(); return; }
 
   btn.disabled = true;
   btn.textContent = "Skickar...";
@@ -479,7 +491,7 @@ document.getElementById("rsvp-form").addEventListener("submit", async function (
     const res  = await fetch("/api/rsvp", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, info: infoEl.value.trim() }),
+      body: JSON.stringify({ name, phone, info: infoEl.value.trim() }),
     });
     const data = await res.json();
 

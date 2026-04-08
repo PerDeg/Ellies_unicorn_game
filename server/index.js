@@ -77,16 +77,20 @@ app.post("/api/scores", async (req, res) => {
 });
 
 // ── POST /api/rsvp ────────────────────────────────────────────────────────────
-// Body: { name, info }
+// Body: { name, phone, info }
 app.post("/api/rsvp", async (req, res) => {
-  const { name, info } = req.body;
+  const { name, phone, info } = req.body;
   if (!name || typeof name !== "string" || !name.trim()) {
     return res.status(400).json({ error: "Namn krävs" });
   }
-  const safeName = name.trim().slice(0, 50);
-  const safeInfo = typeof info === "string" ? info.trim().slice(0, 500) : "";
+  if (!phone || typeof phone !== "string" || !phone.trim()) {
+    return res.status(400).json({ error: "Mobilnummer krävs" });
+  }
+  const safeName  = name.trim().slice(0, 50);
+  const safePhone = phone.trim().slice(0, 20);
+  const safeInfo  = typeof info === "string" ? info.trim().slice(0, 500) : "";
   try {
-    await db.addGuest({ name: safeName, info: safeInfo });
+    await db.addGuest({ name: safeName, phone: safePhone, info: safeInfo });
     res.json({ ok: true });
   } catch (err) {
     console.error("POST /api/rsvp error:", err.message);
