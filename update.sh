@@ -14,7 +14,7 @@ echo "Extracting..."
 unzip -q -o "$TMP/u.zip" -d "$TMP"
 
 echo "Copying files..."
-SRC=$(ls -d "$TMP"/ellies_unicorn_game-*/)
+SRC=$(ls -d "$TMP"/[Ee]llies_unicorn_game-*/)
 cp -r "${SRC}public"  "$DEST/"
 cp -r "${SRC}server"  "$DEST/"
 
