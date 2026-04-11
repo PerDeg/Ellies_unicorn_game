@@ -139,7 +139,15 @@ function _setPowerupClass(){
   unicornEl.classList.toggle("has-rainbow", !!activePowerups.rainbow);
 }
 function activatePowerup(type){
-  if(activePowerups[type.id]) clearTimeout(activePowerups[type.id].timer);
+  const EXTEND_MS=5000;
+  let durMs=type.dur;
+  const existing=activePowerups[type.id];
+  if(existing){
+    // Already active — add 5s to remaining time instead of resetting
+    clearTimeout(existing.timer); clearInterval(existing.tick);
+    const msLeft=existing.endsAt-Date.now();
+    durMs=Math.max(msLeft,0)+EXTEND_MS;
+  }
   const pu=document.getElementById("powerup-bar");
   const old=document.getElementById("pu-el-"+type.id);
   if(old) old.remove();
@@ -147,7 +155,7 @@ function activatePowerup(type){
   puEl.className="pu-active"; puEl.id="pu-el-"+type.id;
   puEl.innerHTML=`${type.emoji} ${type.label} <span class="pu-timer" id="pu-t-${type.id}"></span>`;
   pu.appendChild(puEl);
-  let remaining=Math.ceil(type.dur/1000);
+  let remaining=Math.ceil(durMs/1000);
   const timerEl=()=>document.getElementById("pu-t-"+type.id);
   if(timerEl()) timerEl().textContent=remaining+"s";
   const tick=setInterval(()=>{
@@ -158,10 +166,10 @@ function activatePowerup(type){
     clearInterval(tick); puEl.remove(); delete activePowerups[type.id];
     if(type.id==="rainbow"){ rainbowPositions=[]; hideRainbowDots(); }
     _setPowerupClass();
-  },type.dur);
-  activePowerups[type.id]={timer:endTimer,tick,el:puEl};
+  },durMs);
+  activePowerups[type.id]={timer:endTimer,tick,el:puEl,endsAt:Date.now()+durMs};
   _setPowerupClass();
-  showBanner(type.emoji+" "+type.label,"powerup",2000);
+  showBanner(existing?`${type.emoji} +5s!`:`${type.emoji} ${type.label}`,"powerup",1600);
   playMultiUp(2);
 }
 function clearAllPowerups(){
@@ -300,7 +308,7 @@ function spawnOneStar(xOver){
 }
 function spawnPowerupSprite(){
   if(Math.random()>POWERUP_SPAWN_CHANCE) return;
-  const available=POWERUP_TYPES.filter(t=>!activePowerups[t.id]&&(!t.onlyDiff||t.onlyDiff===difficulty));
+  const available=POWERUP_TYPES.filter(t=>(!t.onlyDiff||t.onlyDiff===difficulty));
   if(!available.length) return;
   const type=available[Math.floor(Math.random()*available.length)];
   const el=document.createElement("div");
@@ -482,7 +490,7 @@ function activateChallenge(){
     playTune("birthday");
   },bonusDur);
   // Gap grows with level so high-level players face more danger
-  nextChallengeAt=totalCaught+cfg.roundSize*7+level*8+Math.floor(seededRng()*25);
+  nextChallengeAt=totalCaught+cfg.roundSize*4+level*4+Math.floor(seededRng()*15);
 }
 // ══════════════════════════════════════
 //  GAME LOOP
@@ -525,15 +533,15 @@ function loop(ts){
     // Sparkle tail for regular good stars (not party/bad)
     if(s.kind==="good"&&!activeChallenge?.partyMode&&s.y>0){
       s.trailEmit=(s.trailEmit||0)+dt;
-      if(s.trailEmit>90){
+      if(s.trailEmit>30){
         s.trailEmit=0;
         const td=document.createElement("div");
         td.className="star-tail-dot";
         td.style.background=TRAIL_COLORS[Math.floor(Math.random()*TRAIL_COLORS.length)];
-        td.style.left=(s.x-2.5)+"px";
+        td.style.left=(s.x-4)+"px";
         td.style.top=(s.y-4)+"px";
         wrap.appendChild(td);
-        setTimeout(()=>td.remove(),360);
+        setTimeout(()=>td.remove(),450);
       }
     }
 
