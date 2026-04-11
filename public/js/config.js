@@ -25,16 +25,15 @@ const DIFF = {
     startMisses: 2,      // starts with only 1 life out of max 3
     baseSpeed:   2.5,
     speedInc:    0.22,
-    maxSpeed:    16.0,   // higher ceiling
+    maxSpeed:    16.0,
     speedReset:  2.5,
     spawnBase:   1000,
     spawnMin:    360,
     spawnLevel:  14,
     multiThresh: [0, 5, 10, 15, 20, 25],
-    roundSize:   10,     // base; grows dynamically with level
-    perfBonus:   5,      // base; grows dynamically with level
+    roundSize:   10,
+    perfBonus:   5,
     catchRadius: 58,
-    missPenalty: 2,      // points lost per missed star (instead of life)
   },
 };
 
@@ -104,10 +103,19 @@ const STREAK_WORDS= ["Bra! 🌟","Häftigt! 💫","Flyger! 🦋","I eld! 🔥","
 //  SPAWN RATES
 // ══════════════════════════════════════
 const POWERUP_SPAWN_CHANCE = 0.05;
-function lifeChance()      { return 0.03; }
-// Separate rates for skull (life loss) vs. moon (point penalty)
-function skullChance(level){ return Math.min(0.04 + level * 0.012, 0.12); }
-function moonChance(level) { return Math.min(0.14 + level * 0.022, 0.36); }
+// Per-difficulty spawn rates. Barn uses gentler curves than Vuxen.
+function lifeChance(difficulty, totalCaught){
+  if(difficulty==="vuxen") return Math.max(0.012 - totalCaught*0.0001,  0.005);
+  return                          Math.max(0.015 - totalCaught*0.00005, 0.008);
+}
+function skullChance(difficulty, level){
+  if(difficulty==="vuxen") return Math.min(0.04 + level*0.012, 0.12);
+  return                          Math.min(0.01 + level*0.004, 0.05);
+}
+function moonChance(difficulty, level){
+  if(difficulty==="vuxen") return Math.min(0.14 + level*0.022, 0.36);
+  return                          Math.min(0.04 + level*0.008, 0.15);
+}
 
 // ══════════════════════════════════════
 //  SEEDED RNG

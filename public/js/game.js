@@ -263,25 +263,17 @@ function spawnOneStar(xOver){
     // Bonus round — only good sprites, no bad/life
     kind="good";
     type=activeChallenge.forceType!==undefined?STAR_TYPES[activeChallenge.forceType]:pickStarType();
-  } else if(difficulty==="vuxen"){
+  } else {
     const r=seededRng();
-    const lifeP  = Math.max(0.03-totalCaught*0.0002, 0.01);
-    const skulP  = skullChance(level);
-    const moonP  = moonChance(level);
+    const lifeP=lifeChance(difficulty, totalCaught);
+    const skulP=skullChance(difficulty, level);
+    const moonP=moonChance(difficulty, level);
     if(r < lifeP){
       kind="life"; type=LIFE_TYPES[Math.floor(seededRng()*LIFE_TYPES.length)];
     } else if(r < lifeP+skulP){
       kind="bad"; type=BAD_TYPES[0]; // 💀 life-taker
     } else if(r < lifeP+skulP+moonP){
       kind="bad"; type=BAD_TYPES[1]; // 🌑 point penalty
-    } else {
-      kind="good"; type=pickStarType();
-    }
-  } else {
-    // Barn: 8% chance of a life sprite
-    const r=seededRng();
-    if(r < 0.08){
-      kind="life"; type=LIFE_TYPES[Math.floor(seededRng()*LIFE_TYPES.length)];
     } else {
       kind="good"; type=pickStarType();
     }
@@ -385,24 +377,11 @@ function onCatch(starType,x,y){
   if(totalCaught>=nextChallengeAt&&!activeChallenge) activateChallenge();
 }
 function onMiss(sx,sy){
-  // Missing a good sprite does NOT break streak — only catching bad sprites does
+  // Missing a sprite has no penalty — only catching bad sprites costs anything.
   currentSpeed=Math.max(currentSpeed-0.3,cfg.baseSpeed); updateSpeedBar();
   roundMissed++; totalCaught++;
   updateRoundBar(); checkRoundEnd();
   missPop(sx,sy); playMiss();
-
-  if(difficulty==="vuxen"){
-    // Vuxen: miss costs points, not a life
-    const pen=cfg.missPenalty||2;
-    score=Math.max(0,score-pen); scoreEl.textContent=score;
-    const d=document.createElement("div"); d.className="miss-flash";
-    d.textContent="-"+pen+"p";
-    d.style.cssText=`left:${sx}px;top:${sy}px;color:#ff9de2;font-size:13px;`;
-    wrap.appendChild(d); setTimeout(()=>{if(d.parentNode)d.parentNode.removeChild(d);},700);
-  } else {
-    misses++; updateHearts();
-    if(misses>=cfg.maxMisses) endGame();
-  }
 }
 function onBadCatch(type,x,y){
   // Always break streak on catching any bad sprite
@@ -663,7 +642,6 @@ function startGame(){
   eventBanner.classList.remove("show");
   document.getElementById("overlay-title").textContent="Grattis på\nFödelsedagen Ellie! 🎂";
   document.getElementById("overlay-sub").textContent="Fånga stjärnorna och samla poäng! ✨";
-  document.getElementById("how-vuxen").style.display=difficulty==="vuxen"?"":"none";
   document.getElementById("stats-card").style.display="none";
   document.getElementById("end-medals").style.display="none";
   document.getElementById("rank-line").style.display="none";
@@ -725,7 +703,6 @@ document.querySelectorAll(".diff-btn").forEach(btn=>{
     document.querySelectorAll(".diff-btn").forEach(b=>b.classList.remove("selected"));
     btn.classList.add("selected");
     renderTop(difficulty);
-    document.getElementById("how-vuxen").style.display=difficulty==="vuxen"?"":"none";
   };
   btn.addEventListener("click", select);
   btn.addEventListener("touchend", e=>{ e.preventDefault(); select(); });
