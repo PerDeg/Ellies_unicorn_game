@@ -41,11 +41,11 @@ const DIFF = {
 //  SPRITE TYPES
 // ══════════════════════════════════════
 const STAR_TYPES = [
-  { emoji: "⭐", pts: 1, size: 38, bad: false },
-  { emoji: "🌠", pts: 2, size: 36, bad: false },
-  { emoji: "💫", pts: 3, size: 40, bad: false },
+  { emoji: "⭐", pts: 5, size: 38, bad: false },
+  { emoji: "🌠", pts: 5, size: 36, bad: false },
+  { emoji: "💫", pts: 5, size: 40, bad: false },
   { emoji: "🌟", pts: 5, size: 42, bad: false },
-  { emoji: "✨", pts: 8, size: 38, bad: false },
+  { emoji: "✨", pts: 5, size: 38, bad: false },
 ];
 const STAR_WEIGHTS = [40, 25, 18, 12, 5];
 
@@ -64,19 +64,20 @@ const LIFE_TYPES = [
 
 const POWERUP_TYPES = [
   { id: "magnet",  emoji: "🧲", label: "Magnet!",   dur: 6000, color: "#67e8f9" },
+  { id: "slowmo",  emoji: "⏱️",  label: "Slow-mo!",  dur: 5000, color: "#c4b5fd", onlyDiff: "vuxen" },
   { id: "rainbow", emoji: "🌈", label: "Regnbåge!", dur: 7000, color: "#ff9de2" },
 ];
 
 // Party-mode sprite types (used during "party" challenge round)
 const PARTY_TYPES = [
   { emoji: "🎂", pts: 5, size: 40 },
-  { emoji: "🍰", pts: 3, size: 38 },
-  { emoji: "🎉", pts: 4, size: 38 },
-  { emoji: "🎊", pts: 4, size: 38 },
-  { emoji: "🥳", pts: 6, size: 40 },
-  { emoji: "🎈", pts: 2, size: 36 },
+  { emoji: "🍰", pts: 5, size: 38 },
+  { emoji: "🎉", pts: 5, size: 38 },
+  { emoji: "🎊", pts: 5, size: 38 },
+  { emoji: "🥳", pts: 5, size: 40 },
+  { emoji: "🎈", pts: 5, size: 36 },
   { emoji: "🎁", pts: 5, size: 38 },
-  { emoji: "🎀", pts: 3, size: 36 },
+  { emoji: "🎀", pts: 5, size: 36 },
 ];
 
 // ══════════════════════════════════════

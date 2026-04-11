@@ -294,7 +294,7 @@ function spawnOneStar(xOver){
 }
 function spawnPowerupSprite(){
   if(Math.random()>POWERUP_SPAWN_CHANCE) return;
-  const available=POWERUP_TYPES.filter(t=>!activePowerups[t.id]);
+  const available=POWERUP_TYPES.filter(t=>!activePowerups[t.id]&&(!t.onlyDiff||t.onlyDiff===difficulty));
   if(!available.length) return;
   const type=available[Math.floor(Math.random()*available.length)];
   const el=document.createElement("div");
