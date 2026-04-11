@@ -43,7 +43,6 @@ let activeChallenge=null, nextChallengeAt=30, challengeEndTimer=null;
 let activePowerups={};
 let _cW=0, _cH=0;
 let _lastUx=-1, _lastUy=-1;
-let goodCatchesForLife=0;
 let globalScoreCache={barn:null, vuxen:null};
 let tlShowDiff="barn";
 let bonusTimer=null;
@@ -262,7 +261,11 @@ function spawnOneStar(xOver){
   if(activeChallenge){
     // Bonus round — only good sprites, no bad/life
     kind="good";
-    type=activeChallenge.forceType!==undefined?STAR_TYPES[activeChallenge.forceType]:pickStarType();
+    if(activeChallenge.partyMode){
+      type=PARTY_TYPES[Math.floor(seededRng()*PARTY_TYPES.length)];
+    } else {
+      type=activeChallenge.forceType!==undefined?STAR_TYPES[activeChallenge.forceType]:pickStarType();
+    }
   } else {
     const r=seededRng();
     const lifeP=lifeChance(difficulty, totalCaught);
@@ -280,6 +283,7 @@ function spawnOneStar(xOver){
   }
   const el=document.createElement("div");
   el.className=kind==="bad"?"fbad":"fstar";
+  if(activeChallenge?.partyMode) el.classList.add("party-sprite");
   el.textContent=type.emoji;
   const sz=type.size+(kind==="good"?(activeChallenge?.sizeBoost||0):0);
   el.style.fontSize=sz+"px";
@@ -290,18 +294,18 @@ function spawnOneStar(xOver){
 }
 function spawnPowerupSprite(){
   if(Math.random()>POWERUP_SPAWN_CHANCE) return;
-  const available=POWERUP_TYPES.filter(t=>!activePowerups[t.id]&&(!t.minLevel||level>=t.minLevel));
+  const available=POWERUP_TYPES.filter(t=>!activePowerups[t.id]);
   if(!available.length) return;
   const type=available[Math.floor(Math.random()*available.length)];
   const el=document.createElement("div");
   el.className="fstar";
   el.textContent=type.emoji;
-  el.style.fontSize="52px";
-  el.style.filter=`drop-shadow(0 0 14px ${type.color}) drop-shadow(0 0 6px #fff)`;
+  el.style.fontSize="40px";
+  el.style.filter=`drop-shadow(0 0 10px ${type.color}) drop-shadow(0 0 4px #fff)`;
   const x=28+Math.random()*((_cW||wrap.clientWidth)-60);
-  el.style.left=x+"px"; el.style.top="-60px";
+  el.style.left=x+"px"; el.style.top="-50px";
   wrap.insertBefore(el,centreFlash);
-  stars.push({el,x:x+26,y:-60,speed:currentSpeed*0.7,type,kind:"powerup"});
+  stars.push({el,x:x+20,y:-50,speed:currentSpeed*0.7,type,kind:"powerup"});
 }
 function spawnStar(){
   if(!playing) return;
@@ -334,21 +338,6 @@ function onCatch(starType,x,y){
   score+=pts; scoreEl.textContent=score;
   streak++; totalCaught++; roundCaught++;
   if(streak>maxStreak) maxStreak=streak;
-
-  // Barn: earn a life back every 12 consecutive good catches
-  if(difficulty==="barn"){
-    goodCatchesForLife++;
-    if(goodCatchesForLife>=12){
-      goodCatchesForLife=0;
-      if(misses>0){
-        misses--; updateHearts();
-        showBanner("💚 +1 Liv! (12 bra fångster!)","normal",2000);
-        const _ld=document.createElement("div"); _ld.className="score-pop";
-        _ld.textContent="💚 +❤️"; _ld.style.cssText=`left:${x}px;top:${y}px;font-size:20px;color:#86efac;`;
-        wrap.appendChild(_ld); setTimeout(()=>{if(_ld.parentNode)_ld.parentNode.removeChild(_ld);},900);
-      }
-    }
-  }
   streakEl.textContent=streak;
   currentSpeed=Math.min(currentSpeed+cfg.speedInc,cfg.maxSpeed);
   updateSpeedBar();
@@ -631,7 +620,7 @@ function startGame(){
 
   score=0; level=1; streak=0; maxStreak=0;
   multiplier=1; maxMulti=1; misses=cfg.startMisses||0; totalCaught=0; perfectRounds=0;
-  roundCaught=0; roundMissed=0; roundNum=1; goodCatchesForLife=0;
+  roundCaught=0; roundMissed=0; roundNum=1;
   activeChallenge=null; nextChallengeAt=cfg.roundSize*8;
   currentSpeed=cfg.baseSpeed;
   resetTheme(); resetRng();

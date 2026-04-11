@@ -6,17 +6,17 @@ const DIFF = {
   barn: {
     label:       "Barn",
     maxMisses:   3,
-    startMisses: 0,    // starts with all 3 lives
+    startMisses: 0,
     baseSpeed:   1.2,
-    speedInc:    0.015,  // slow build — takes much longer to reach max
-    maxSpeed:    7.0,    // higher ceiling
+    speedInc:    0.05,   // faster build-up
+    maxSpeed:    8.0,
     speedReset:  1.2,
-    spawnBase:   1400,
-    spawnMin:    800,
-    spawnLevel:  12,
+    spawnBase:   1250,
+    spawnMin:    650,
+    spawnLevel:  16,
     multiThresh: [0, 8, 15, 25, 35, 50],
-    roundSize:   8,      // base; grows dynamically with level
-    perfBonus:   3,      // base; grows dynamically with level
+    roundSize:   8,
+    perfBonus:   3,
     catchRadius: 95,
   },
   vuxen: {
@@ -51,8 +51,8 @@ const STAR_WEIGHTS = [40, 25, 18, 12, 5];
 
 // Catching a bad sprite breaks streak. 💀 costs a life, 🌑 costs points only.
 const BAD_TYPES = [
-  { emoji: "💀", pts: 0,  size: 36, bad: true, takesLife: true, label: "💀 -Liv!"  },
-  { emoji: "🌑", pts: -8, size: 38, bad: true, label: "🌑 -8p" },
+  { emoji: "💀", pts: 0,   size: 36, bad: true, takesLife: true, label: "💀 -Liv!"  },
+  { emoji: "🌑", pts: -15, size: 38, bad: true, label: "🌑 -15p" },
 ];
 
 // Life sprites — all give a life (no negative ones; skull handles that)
@@ -64,8 +64,19 @@ const LIFE_TYPES = [
 
 const POWERUP_TYPES = [
   { id: "magnet",  emoji: "🧲", label: "Magnet!",   dur: 6000, color: "#67e8f9" },
-  { id: "slowmo",  emoji: "⏱️",  label: "Slow-mo!",  dur: 5000, color: "#c4b5fd", minLevel: 3 },
   { id: "rainbow", emoji: "🌈", label: "Regnbåge!", dur: 7000, color: "#ff9de2" },
+];
+
+// Party-mode sprite types (used during "party" challenge round)
+const PARTY_TYPES = [
+  { emoji: "🎂", pts: 5, size: 40 },
+  { emoji: "🍰", pts: 3, size: 38 },
+  { emoji: "🎉", pts: 4, size: 38 },
+  { emoji: "🎊", pts: 4, size: 38 },
+  { emoji: "🥳", pts: 6, size: 40 },
+  { emoji: "🎈", pts: 2, size: 36 },
+  { emoji: "🎁", pts: 5, size: 38 },
+  { emoji: "🎀", pts: 3, size: 36 },
 ];
 
 // ══════════════════════════════════════
@@ -109,8 +120,8 @@ function lifeChance(difficulty, totalCaught){
   return                          Math.max(0.015 - totalCaught*0.00005, 0.008);
 }
 function skullChance(difficulty, level){
-  if(difficulty==="vuxen") return Math.min(0.04 + level*0.012, 0.12);
-  return                          Math.min(0.01 + level*0.004, 0.05);
+  if(difficulty==="vuxen") return Math.min(0.07 + level*0.015, 0.20);
+  return                          Math.min(0.02 + level*0.007, 0.10);
 }
 function moonChance(difficulty, level){
   if(difficulty==="vuxen") return Math.min(0.14 + level*0.022, 0.36);
