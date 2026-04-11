@@ -61,10 +61,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0020;}
 /* ── COMBO RING (always visible as hitbox guide) ── */
 #combo-ring{
   position:absolute;border-radius:50%;z-index:9;pointer-events:none;
-  transform:translate(-50%,-50%);width:88px;height:88px;
+  transform:translate(-50%,-50%);width:110px;height:110px;
   border:2px solid rgba(255,255,255,0.20);transition:border-color 0.2s;
 }
-#combo-ring.vuxen{width:60px;height:60px;}
+#combo-ring.vuxen{width:72px;height:72px;}
 #combo-ring.c1{border-color:#a78bfa;}
 #combo-ring.c2{border-color:#ff9de2;}
 #combo-ring.c3{border-color:#ffe066;}
@@ -77,10 +77,16 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0020;}
 #unicorn.vuxen{font-size:38px;}
 
 /* ── FALLING SPRITES ── */
-.fstar{position:absolute;pointer-events:none;z-index:8;line-height:1;}
+@keyframes starSparkle{
+  0%,100%{transform:scale(1)   rotate(0deg);opacity:1;}
+  40%    {transform:scale(1.1) rotate(6deg);opacity:0.85;}
+  70%    {transform:scale(0.95)rotate(-4deg);opacity:0.92;}
+}
+.fstar{position:absolute;pointer-events:none;z-index:8;line-height:1;
+  animation:starSparkle 1.6s ease-in-out infinite;}
 .fbad{position:absolute;pointer-events:none;z-index:8;line-height:1;transform:rotate(-12deg);}
 
-/* Party-mode sprites: cycling rainbow glow */
+/* Party-mode sprites: cycling rainbow glow (overrides starSparkle) */
 @keyframes partyGlitter{
   0%  {filter:drop-shadow(0 0 8px #ff4d4d) drop-shadow(0 0 14px #ff4d4d);}
   16% {filter:drop-shadow(0 0 8px #ff9900) drop-shadow(0 0 14px #ff9900);}

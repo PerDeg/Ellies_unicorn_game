@@ -17,7 +17,7 @@ const DIFF = {
     multiThresh: [0, 8, 15, 25, 35, 50],
     roundSize:   8,
     perfBonus:   3,
-    catchRadius: 95,
+    catchRadius: 55,
   },
   vuxen: {
     label:       "Vuxen",
@@ -25,7 +25,7 @@ const DIFF = {
     startMisses: 2,      // starts with only 1 life out of max 3
     baseSpeed:   2.5,
     speedInc:    0.22,
-    maxSpeed:    11.2,
+    maxSpeed:    9.8,
     speedReset:  2.5,
     spawnBase:   1000,
     spawnMin:    360,
@@ -33,7 +33,7 @@ const DIFF = {
     multiThresh: [0, 5, 10, 15, 20, 25],
     roundSize:   10,
     perfBonus:   5,
-    catchRadius: 58,
+    catchRadius: 36,
   },
 };
 
@@ -100,6 +100,7 @@ const CHALLENGES = [
   { id: "double",  label: "💫 Dubbla stjärnor!", doubleSpawn: true, music: "challenge" },
   { id: "golden",  label: "✨ Guldrusning!", forceType: 4, music: "golden" },
   { id: "party",   label: "🎉 Festläge!", partyMode: true, music: "challenge" },
+  { id: "party",   label: "🎉 Festläge!", partyMode: true, music: "challenge" }, // weighted 2×
 ];
 
 // ══════════════════════════════════════

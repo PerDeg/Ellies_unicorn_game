@@ -284,6 +284,7 @@ function spawnOneStar(xOver){
   const el=document.createElement("div");
   el.className=kind==="bad"?"fbad":"fstar";
   if(activeChallenge?.partyMode) el.classList.add("party-sprite");
+  else if(kind!=="bad") el.style.animationDelay=`-${(Math.random()*1.6).toFixed(2)}s`;
   el.textContent=type.emoji;
   const sz=type.size+(kind==="good"?(activeChallenge?.sizeBoost||0):0);
   el.style.fontSize=sz+"px";
