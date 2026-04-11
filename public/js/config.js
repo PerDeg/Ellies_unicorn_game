@@ -9,7 +9,7 @@ const DIFF = {
     startMisses: 0,
     baseSpeed:   1.2,
     speedInc:    0.08,
-    maxSpeed:    8.0,
+    maxSpeed:    5.6,
     speedReset:  1.2,
     spawnBase:   1200,
     spawnMin:    550,
@@ -25,7 +25,7 @@ const DIFF = {
     startMisses: 2,      // starts with only 1 life out of max 3
     baseSpeed:   2.5,
     speedInc:    0.22,
-    maxSpeed:    16.0,
+    maxSpeed:    11.2,
     speedReset:  2.5,
     spawnBase:   1000,
     spawnMin:    360,
