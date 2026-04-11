@@ -377,7 +377,6 @@ function onCatch(starType,x,y){
 }
 function onMiss(sx,sy){
   // Missing a sprite has no penalty — only catching bad sprites costs anything.
-  currentSpeed=Math.max(currentSpeed-0.3,cfg.baseSpeed); updateSpeedBar();
   roundMissed++; totalCaught++;
   updateRoundBar(); checkRoundEnd();
   missPop(sx,sy); playMiss();
@@ -562,7 +561,10 @@ function doLevelUp(){
   applyTheme(level);
   showLevelToast("🌈 Nivå "+level+"! ⚡");
   scheduleSpawn();
-  setTimeout(()=>playTune("birthday"),160);
+  setTimeout(()=>{
+    if(activeChallenge?.partyMode) playTune("party");
+    else playTune("birthday");
+  },160);
 }
 // ══════════════════════════════════════
 //  END GAME
