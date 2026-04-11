@@ -284,14 +284,19 @@ function spawnOneStar(xOver){
   const el=document.createElement("div");
   el.className=kind==="bad"?"fbad":"fstar";
   if(activeChallenge?.partyMode) el.classList.add("party-sprite");
-  else if(kind!=="bad") el.style.animationDelay=`-${(Math.random()*1.6).toFixed(2)}s`;
+  else if(kind==="bad"){
+    if(type.takesLife) el.classList.add("skull-sprite");
+    else               el.classList.add("moon-sprite");
+  } else {
+    el.style.animationDelay=`-${(Math.random()*1.6).toFixed(2)}s`;
+  }
   el.textContent=type.emoji;
   const sz=type.size+(kind==="good"?(activeChallenge?.sizeBoost||0):0);
   el.style.fontSize=sz+"px";
   const x=xOver!==undefined?xOver:28+Math.random()*((_cW||wrap.clientWidth)-60);
   el.style.left=x+"px"; el.style.top="-55px";
   wrap.insertBefore(el,centreFlash);
-  stars.push({el,x:x+sz/2,y:-55,speed:currentSpeed+(Math.random()*0.3-0.15),type,kind});
+  stars.push({el,x:x+sz/2,y:-55,speed:currentSpeed+(Math.random()*0.3-0.15),type,kind,trailEmit:0});
 }
 function spawnPowerupSprite(){
   if(Math.random()>POWERUP_SPAWN_CHANCE) return;
@@ -510,11 +515,28 @@ function loop(ts){
   const cr=cfg.catchRadius+((activeChallenge?.sizeBoost||0)>0?12:0);
   const cr2=cr*cr;
 
+  const TRAIL_COLORS=["#ffe066","#ff9de2","#a78bfa","#67e8f9","#86efac","#fcd34d"];
   for(let i=stars.length-1;i>=0;i--){
     const s=stars[i];
     s.y+=s.speed*speedMult*(dt/16);
     applyMagnet(s);
     s.el.style.top=s.y+"px";
+
+    // Sparkle tail for regular good stars (not party/bad)
+    if(s.kind==="good"&&!activeChallenge?.partyMode&&s.y>0){
+      s.trailEmit=(s.trailEmit||0)+dt;
+      if(s.trailEmit>90){
+        s.trailEmit=0;
+        const td=document.createElement("div");
+        td.className="star-tail-dot";
+        td.style.background=TRAIL_COLORS[Math.floor(Math.random()*TRAIL_COLORS.length)];
+        td.style.left=(s.x-2.5)+"px";
+        td.style.top=(s.y-4)+"px";
+        wrap.appendChild(td);
+        setTimeout(()=>td.remove(),360);
+      }
+    }
+
     const dx=s.x-ux, dy=s.y-uy;
     const caught=dx*dx+dy*dy<cr2||rainbowCatches(s);
     if(caught){
@@ -628,7 +650,7 @@ function startGame(){
   clearTimeout(challengeEndTimer); clearTimeout(bonusTimer);
   clearAllPowerups(); stopMusic();
   stars.forEach(s=>{ try{ s.el.remove(); }catch{} }); stars=[];
-  wrap.querySelectorAll(".trail,.particle,.catch-pop,.miss-flash,.firework,.score-pop").forEach(e=>e.remove());
+  wrap.querySelectorAll(".trail,.particle,.catch-pop,.miss-flash,.firework,.score-pop,.star-tail-dot").forEach(e=>e.remove());
 
   score=0; level=1; streak=0; maxStreak=0;
   multiplier=1; maxMulti=1; misses=cfg.startMisses||0; totalCaught=0; perfectRounds=0;

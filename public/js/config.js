@@ -100,7 +100,8 @@ const CHALLENGES = [
   { id: "double",  label: "💫 Dubbla stjärnor!", doubleSpawn: true, music: "challenge" },
   { id: "golden",  label: "✨ Guldrusning!", forceType: 4, music: "golden" },
   { id: "party",   label: "🎉 Festläge!", partyMode: true, music: "challenge" },
-  { id: "party",   label: "🎉 Festläge!", partyMode: true, music: "challenge" }, // weighted 2×
+  { id: "party",   label: "🎉 Festläge!", partyMode: true, music: "challenge" },
+  { id: "party",   label: "🎉 Festläge!", partyMode: true, music: "challenge" }, // weighted 3×
 ];
 
 // ══════════════════════════════════════
@@ -118,7 +119,7 @@ const STREAK_WORDS= ["Bra! 🌟","Häftigt! 💫","Flyger! 🦋","I eld! 🔥","
 const POWERUP_SPAWN_CHANCE = 0.05;
 // Per-difficulty spawn rates. Barn uses gentler curves than Vuxen.
 function lifeChance(difficulty, totalCaught){
-  if(difficulty==="vuxen") return Math.max(0.012 - totalCaught*0.0001,  0.005);
+  if(difficulty==="vuxen") return Math.max(0.020 - totalCaught*0.0001,  0.008);
   return                          Math.max(0.015 - totalCaught*0.00005, 0.008);
 }
 function skullChance(difficulty, level){
