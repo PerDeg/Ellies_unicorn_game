@@ -311,11 +311,20 @@ function spawnPowerupSprite(){
 function spawnStar(){
   if(!playing) return;
   spawnOneStar();
+  const rw=()=>36+Math.random()*((_cW||wrap.clientWidth)-80);
   if(activeChallenge?.doubleSpawn){
-    setTimeout(()=>spawnOneStar(36+Math.random()*((_cW||wrap.clientWidth)-80)),200);
+    setTimeout(()=>spawnOneStar(rw()),200);
+  } else if(activeChallenge?.partyMode){
+    // Party mode: Barn gets double, Vuxen gets triple
+    setTimeout(()=>spawnOneStar(rw()),200);
+    if(difficulty==="vuxen" || level>=8) setTimeout(()=>spawnOneStar(rw()),380);
   } else if(difficulty==="vuxen"){
-    setTimeout(()=>spawnOneStar(36+Math.random()*((_cW||wrap.clientWidth)-80)),180);
-    if(level>=4) setTimeout(()=>spawnOneStar(36+Math.random()*((_cW||wrap.clientWidth)-80)),360);
+    setTimeout(()=>spawnOneStar(rw()),180);
+    if(level>=4) setTimeout(()=>spawnOneStar(rw()),360);
+  } else if(level>=12){
+    // Barn gets multi-spawn from level 12
+    setTimeout(()=>spawnOneStar(rw()),220);
+    if(level>=18) setTimeout(()=>spawnOneStar(rw()),440);
   }
   spawnPowerupSprite();
 }
@@ -459,7 +468,7 @@ function activateChallenge(){
   if(badge){ badge.textContent="🎯 "+c.label; badge.classList.add("show"); }
   showBanner("🎯 BONUS: "+c.label,"challenge",3200);
   flashCentre("🎯 BONUSRUNDA!\n"+c.label,1800);
-  playWow(); playTune(c.music==="golden"?"golden":"challenge");
+  playWow(); playTune(c.partyMode?"party":c.music==="golden"?"golden":"challenge");
   // Duration shrinks at higher levels (max 18s → min 8s)
   const bonusDur=Math.max(18000-level*200, 8000);
   challengeEndTimer=setTimeout(()=>{

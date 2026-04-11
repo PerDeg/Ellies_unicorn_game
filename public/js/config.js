@@ -123,11 +123,15 @@ function lifeChance(difficulty, totalCaught){
 }
 function skullChance(difficulty, level){
   if(difficulty==="vuxen") return Math.min(0.07 + level*0.015, 0.20);
-  return                          Math.min(0.02 + level*0.007, 0.10);
+  // Barn: gentle 1-11, then sharply ramps from level 12
+  if(level>=12) return Math.min(0.08 + (level-12)*0.015, 0.22);
+  return 0.02 + level*0.005;
 }
 function moonChance(difficulty, level){
   if(difficulty==="vuxen") return Math.min(0.14 + level*0.022, 0.36);
-  return                          Math.min(0.04 + level*0.008, 0.15);
+  // Barn: same two-phase curve
+  if(level>=12) return Math.min(0.15 + (level-12)*0.020, 0.35);
+  return 0.04 + level*0.009;
 }
 
 // ══════════════════════════════════════

@@ -94,6 +94,15 @@ const TUNES = {
   birthday: { bpm: 120, notes: [[392,0.75],[392,0.25],[440,1],[392,1],[523,1],[494,2],[392,0.75],[392,0.25],[440,1],[392,1],[587,1],[523,2],[392,0.75],[392,0.25],[784,1],[659,1],[523,1],[494,1],[440,2],[698,0.75],[698,0.25],[659,1],[523,1],[587,1],[523,2]] },
   challenge:{ bpm: 136, notes: [[784,0.5],[880,0.5],[988,0.5],[1047,0.5],[988,0.5],[880,0.5],[784,1],[698,0.5],[784,0.5],[880,0.5],[988,0.5],[1047,1],[988,0.5],[880,0.5],[784,0.5],[659,0.5],[698,0.5],[784,0.5],[880,1],[784,2]] },
   golden:   { bpm:  88, notes: [[523,1],[659,1],[784,1],[1047,2],[880,1],[784,1],[698,1],[659,2],[587,0.5],[659,0.5],[698,1],[784,1],[880,2],[1047,1],[784,3]] },
+  // EDM / party mode — square wave synth riff at 130 BPM
+  party: { bpm: 130, wave: "square", vol: 0.018, notes: [
+    [880,0.5],[880,0.5],[1047,0.5],[880,0.5],[784,0.5],[784,0.5],[880,0.5],[784,0.5],
+    [659,0.5],[659,0.5],[784,0.5],[659,0.5],[523,0.5],[587,0.5],[659,0.5],[784,0.5],
+    [880,0.75],[1047,0.25],[1319,0.5],[1047,0.5],[880,0.5],[784,0.5],
+    [880,0.25],[880,0.25],[1047,0.25],[880,0.25],[784,0.5],[659,0.5],
+    [784,0.5],[880,0.5],[1047,0.5],[1319,0.5],[1047,0.5],[880,0.5],
+    [784,0.25],[659,0.25],[523,0.5],[659,0.5],[784,0.5],[880,1],
+  ]},
 };
 
 let musicTimeout = null;
@@ -113,16 +122,18 @@ function playTune(name, loop = true) {
   stopMusic(); // kill any currently playing tune immediately
   const tune = TUNES[name] || TUNES.birthday;
   const beat = 60 / tune.bpm;
+  const waveType = tune.wave || "sine";
+  const baseVol  = tune.vol  || 0.040;
   let t = ac.currentTime + 0.1;
   tune.notes.forEach(([f, b]) => {
     const dur = b * beat * 0.7;
     const o = ac.createOscillator();
     const g = ac.createGain();
     o.connect(g); g.connect(masterGain);
-    o.type = "sine";
+    o.type = waveType;
     o.frequency.setValueAtTime(f, t);
     g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(0.040, t + 0.01);
+    g.gain.linearRampToValueAtTime(baseVol, t + 0.01);
     g.gain.exponentialRampToValueAtTime(0.0001, t + Math.max(dur, 0.05));
     o.start(t);
     o.stop(t + Math.max(dur, 0.05) + 0.06);
