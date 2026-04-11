@@ -373,11 +373,11 @@ function onMiss(sx,sy){
   missPop(sx,sy); playMiss();
 }
 function onBadCatch(type,x,y){
-  // Always break streak on catching any bad sprite
+  // Always break streak on catching any bad sprite — speed is NOT reset
   streak=0; streakEl.textContent=0;
   multiplier=1; multiEl.textContent="×1";
   updateComboRing(1);
-  currentSpeed=cfg.speedReset; updateSpeedBar();
+  updateSpeedBar();
 
   if(type.takesLife){
     // 💀 — costs a life
