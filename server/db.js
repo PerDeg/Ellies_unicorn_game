@@ -18,6 +18,15 @@ async function init() {
       created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW()
     );
     CREATE INDEX IF NOT EXISTS scores_diff_score ON scores (difficulty, score DESC);
+
+    CREATE TABLE IF NOT EXISTS guests (
+      id         SERIAL PRIMARY KEY,
+      name       VARCHAR(50)  NOT NULL,
+      phone      VARCHAR(20),
+      info       TEXT,
+      created_at TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    );
+    ALTER TABLE guests ADD COLUMN IF NOT EXISTS phone VARCHAR(20);
   `);
 }
 
@@ -73,4 +82,33 @@ async function getTop(difficulty) {
   return rows;
 }
 
-module.exports = { init, addScore, getTop };
+/**
+ * Return top-10 across all difficulties combined.
+ */
+async function getAllTop() {
+  const { rows } = await pool.query(
+    `SELECT id, name, score, difficulty,
+            max_streak AS "maxStreak", max_multi AS "maxMulti",
+            perfect_rounds AS "perfectRounds", caught
+     FROM scores
+     ORDER BY score DESC, created_at ASC
+     LIMIT 10`
+  );
+  return rows;
+}
+
+async function addGuest({ name, phone, info }) {
+  await pool.query(
+    `INSERT INTO guests (name, phone, info) VALUES ($1, $2, $3)`,
+    [name, phone || null, info || null]
+  );
+}
+
+async function getGuests() {
+  const { rows } = await pool.query(
+    `SELECT id, name, phone, info, created_at FROM guests ORDER BY created_at ASC`
+  );
+  return rows;
+}
+
+module.exports = { init, addScore, getTop, getAllTop, addGuest, getGuests };

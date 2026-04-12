@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Ellies Kalas</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦄</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  min-height: 100vh;
+  background: linear-gradient(155deg, #1a0550 0%, #3b0764 40%, #1e1b4b 100%);
+  font-family: 'Nunito', sans-serif;
+  color: #fff;
+  padding: 24px 16px 48px;
+}
+
+.wrap { max-width: 640px; margin: 0 auto; }
+
+h1 {
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.8em; color: #ffe066;
+  text-align: center; margin-bottom: 6px;
+  text-shadow: 0 0 20px rgba(255,200,0,0.4);
+}
+.sub { text-align: center; color: rgba(255,255,255,0.5); font-size: 0.9em; margin-bottom: 24px; }
+
+/* Login card */
+.card {
+  background: rgba(255,255,255,0.08);
+  border: 1.5px solid rgba(255,255,255,0.18);
+  border-radius: 20px;
+  padding: 24px 20px;
+  margin-bottom: 20px;
+}
+.card h2 { font-family: 'Fredoka One', cursive; font-size: 1.2em; margin-bottom: 14px; color: #c4b5fd; }
+
+label { display: block; font-size: 0.9em; font-weight: 700; margin-bottom: 6px; opacity: 0.8; }
+input[type="password"], input[type="text"] {
+  width: 100%; padding: 11px 14px;
+  background: rgba(255,255,255,0.12);
+  border: 1.5px solid rgba(255,255,255,0.28);
+  border-radius: 12px;
+  color: #fff; font-family: 'Nunito', sans-serif; font-size: 1em; font-weight: 700;
+  outline: none;
+  -webkit-appearance: none;
+}
+input::placeholder { color: rgba(255,255,255,0.4); font-weight: 400; }
+input:focus { border-color: rgba(255,220,80,0.65); }
+
+.btn {
+  margin-top: 14px; width: 100%;
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  border: none; border-radius: 14px; padding: 13px;
+  font-family: 'Fredoka One', cursive; font-size: 1.15em;
+  color: #fff; cursor: pointer;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.3);
+  transition: transform 0.12s;
+}
+.btn:active { transform: scale(0.97); }
+.btn:disabled { opacity: 0.5; cursor: default; }
+
+.err { margin-top: 10px; color: #fca5a5; font-size: 0.9em; font-weight: 700; display: none; }
+.err.show { display: block; }
+
+/* Stats bar */
+.stats-bar {
+  display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;
+}
+.stat-pill {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 20px; padding: 6px 14px;
+  font-family: 'Fredoka One', cursive; font-size: 1em; color: #ffe066;
+}
+.stat-pill span { color: rgba(255,255,255,0.6); font-family: 'Nunito', sans-serif; font-size: 0.82em; font-weight: 700; margin-left: 4px; }
+
+/* Guest table */
+table { width: 100%; border-collapse: collapse; font-size: 0.95em; }
+thead th {
+  font-family: 'Fredoka One', cursive; font-size: 0.85em;
+  color: rgba(255,255,255,0.45); padding: 6px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+  text-align: left;
+}
+tbody tr { border-bottom: 1px solid rgba(255,255,255,0.06); }
+tbody tr:last-child { border-bottom: none; }
+tbody td { padding: 10px 10px; vertical-align: top; line-height: 1.4; }
+.td-num { color: rgba(255,255,255,0.35); font-size: 0.85em; width: 32px; }
+.td-name { font-family: 'Fredoka One', cursive; font-size: 1.05em; }
+.td-info { color: rgba(255,255,255,0.65); font-size: 0.88em; font-style: italic; }
+.td-info:empty::after { content: '—'; opacity: 0.3; }
+.td-date { color: rgba(255,255,255,0.3); font-size: 0.8em; white-space: nowrap; }
+
+.empty { text-align: center; color: rgba(255,255,255,0.3); padding: 20px; font-size: 0.9em; }
+
+/* Export button */
+.btn-export {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.22);
+  border-radius: 12px; padding: 8px 18px;
+  font-family: 'Fredoka One', cursive; font-size: 0.95em;
+  color: rgba(255,255,255,0.7); cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-export:hover { background: rgba(255,255,255,0.15); }
+
+.top-actions { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+.top-actions h2 { font-family: 'Fredoka One', cursive; font-size: 1.2em; color: #c4b5fd; }
+
+#login-section { }
+#guest-section { display: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🦄 Admin — Ellies Kalas</h1>
+  <p class="sub">Gästlista &amp; OSA-hantering</p>
+
+  <!-- Login -->
+  <div id="login-section" class="card">
+    <h2>🔐 Logga in</h2>
+    <label for="admin-key">Adminkod</label>
+    <input type="password" id="admin-key" placeholder="Ange adminkod…" autocomplete="current-password">
+    <button class="btn" id="login-btn" onclick="doLogin()">Logga in</button>
+    <div class="err" id="login-err">Fel kod — försök igen.</div>
+  </div>
+
+  <!-- Guest list (shown after login) -->
+  <div id="guest-section">
+    <div class="stats-bar" id="stats-bar"></div>
+
+    <div class="card">
+      <div class="top-actions">
+        <h2>📋 Anmälda gäster</h2>
+        <button class="btn-export" onclick="exportCSV()">⬇ Exportera CSV</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Namn</th>
+            <th>Mobilnummer</th>
+            <th>Allergier / Info</th>
+            <th>Anmält</th>
+          </tr>
+        </thead>
+        <tbody id="guest-body">
+          <tr><td colspan="4" class="empty">Laddar…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+let adminKey = "";
+let guestData = [];
+
+function doLogin() {
+  const key = document.getElementById("admin-key").value.trim();
+  if (!key) return;
+  adminKey = key;
+  document.getElementById("login-btn").disabled = true;
+  document.getElementById("login-err").classList.remove("show");
+  loadGuests();
+}
+
+document.getElementById("admin-key").addEventListener("keydown", e => {
+  if (e.key === "Enter") doLogin();
+});
+
+async function loadGuests() {
+  try {
+    const res = await fetch("/api/admin/guests", {
+      headers: { "x-admin-key": adminKey }
+    });
+    if (res.status === 401) {
+      document.getElementById("login-err").classList.add("show");
+      document.getElementById("login-btn").disabled = false;
+      adminKey = "";
+      return;
+    }
+    const data = await res.json();
+    guestData = data.guests || [];
+    showGuests();
+  } catch (err) {
+    document.getElementById("login-err").textContent = "Fel: " + err.message;
+    document.getElementById("login-err").classList.add("show");
+    document.getElementById("login-btn").disabled = false;
+  }
+}
+
+function showGuests() {
+  document.getElementById("login-section").style.display = "none";
+  document.getElementById("guest-section").style.display = "block";
+
+  // Stats
+  const withInfo = guestData.filter(g => g.info && g.info.trim()).length;
+  document.getElementById("stats-bar").innerHTML = `
+    <div class="stat-pill">${guestData.length}<span>anmälda</span></div>
+    ${withInfo ? `<div class="stat-pill">${withInfo}<span>med allergi/info</span></div>` : ""}
+  `;
+  if (!guestData.length) {
+    document.getElementById("guest-body").innerHTML = `<tr><td colspan="5" class="empty">Inga anmälningar än 😊</td></tr>`;
+    document.getElementById("login-section").style.display = "none";
+    document.getElementById("guest-section").style.display = "block";
+    return;
+  }
+
+  // Table
+  const body = document.getElementById("guest-body");
+  if (!guestData.length) {
+    body.innerHTML = `<tr><td colspan="5" class="empty">Inga anmälningar än 😊</td></tr>`;
+    return;
+  }
+  body.innerHTML = guestData.map((g, i) => {
+    const date = new Date(g.created_at);
+    const dateStr = date.toLocaleDateString("sv-SE", { day: "numeric", month: "short" })
+                  + " " + date.toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" });
+    return `<tr>
+      <td class="td-num">${i + 1}</td>
+      <td class="td-name">${esc(g.name)}</td>
+      <td class="td-info">${esc(g.phone || "")}</td>
+      <td class="td-info">${esc(g.info || "")}</td>
+      <td class="td-date">${dateStr}</td>
+    </tr>`;
+  }).join("");
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function exportCSV() {
+  const rows = [["#","Namn","Mobilnummer","Allergier/Info","Anmält"]];
+  guestData.forEach((g, i) => {
+    rows.push([i + 1, g.name, g.phone || "", g.info || "", new Date(g.created_at).toLocaleString("sv-SE")]);
+  });
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "ellies-kalas-gastlista.csv";
+  a.click();
+}
+</script>
+</body>
+</html>

@@ -58,13 +58,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0020;}
 #round-fill.clean{background:linear-gradient(90deg,#86efac,#22d3ee);}
 #round-fill.dirty{background:linear-gradient(90deg,#fca5a5,#f472b6);}
 
-/* ── COMBO RING ── */
+/* ── COMBO RING (always visible as hitbox guide) ── */
 #combo-ring{
   position:absolute;border-radius:50%;z-index:9;pointer-events:none;
-  transform:translate(-50%,-50%);width:88px;height:88px;
-  border:3px solid transparent;transition:border-color 0.2s;
+  transform:translate(-50%,-50%);width:110px;height:110px;
+  border:2px solid rgba(255,255,255,0.20);transition:border-color 0.2s;
 }
-#combo-ring.vuxen{width:60px;height:60px;}
+#combo-ring.vuxen{width:72px;height:72px;}
 #combo-ring.c1{border-color:#a78bfa;}
 #combo-ring.c2{border-color:#ff9de2;}
 #combo-ring.c3{border-color:#ffe066;}
@@ -77,8 +77,53 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0020;}
 #unicorn.vuxen{font-size:38px;}
 
 /* ── FALLING SPRITES ── */
-.fstar{position:absolute;pointer-events:none;z-index:8;line-height:1;}
+@keyframes starSparkle{
+  0%,100%{transform:scale(1)   rotate(0deg);opacity:1;}
+  40%    {transform:scale(1.1) rotate(6deg);opacity:0.85;}
+  70%    {transform:scale(0.95)rotate(-4deg);opacity:0.92;}
+}
+.fstar{position:absolute;pointer-events:none;z-index:8;line-height:1;
+  animation:starSparkle 1.6s ease-in-out infinite;}
 .fbad{position:absolute;pointer-events:none;z-index:8;line-height:1;transform:rotate(-12deg);}
+
+/* Party-mode sprites: cycling rainbow glow (overrides starSparkle) */
+@keyframes partyGlitter{
+  0%  {filter:drop-shadow(0 0 8px #ff4d4d) drop-shadow(0 0 14px #ff4d4d);}
+  16% {filter:drop-shadow(0 0 8px #ff9900) drop-shadow(0 0 14px #ff9900);}
+  33% {filter:drop-shadow(0 0 8px #ffe600) drop-shadow(0 0 14px #ffe600);}
+  50% {filter:drop-shadow(0 0 8px #33cc33) drop-shadow(0 0 14px #33cc33);}
+  66% {filter:drop-shadow(0 0 8px #00aaff) drop-shadow(0 0 14px #00aaff);}
+  83% {filter:drop-shadow(0 0 8px #9933ff) drop-shadow(0 0 14px #9933ff);}
+  100%{filter:drop-shadow(0 0 8px #ff33cc) drop-shadow(0 0 14px #ff33cc);}
+}
+.party-sprite{animation:partyGlitter 0.5s linear infinite;}
+
+/* Moon — dark evil cycling glow */
+@keyframes moonEvil{
+  0%  {filter:drop-shadow(0 0 7px #8b0000) drop-shadow(0 0 16px #3d0000);}
+  33% {filter:drop-shadow(0 0 10px #6d0066) drop-shadow(0 0 20px #350033);}
+  66% {filter:drop-shadow(0 0 8px #550000) drop-shadow(0 0 16px #220022);}
+  100%{filter:drop-shadow(0 0 7px #8b0000) drop-shadow(0 0 16px #3d0000);}
+}
+.moon-sprite{animation:moonEvil 0.65s linear infinite;}
+
+/* Skull — pulsing red danger glow */
+@keyframes skullDanger{
+  0%,100%{filter:drop-shadow(0 0 5px #cc0000) drop-shadow(0 0 10px #880000);}
+  50%    {filter:drop-shadow(0 0 14px #ff2222) drop-shadow(0 0 24px #dd0000);}
+}
+.skull-sprite{animation:skullDanger 0.45s ease-in-out infinite;}
+
+/* Falling star sparkle tail dots */
+.star-tail-dot{
+  position:absolute;pointer-events:none;z-index:6;
+  border-radius:50%;width:8px;height:8px;
+  animation:starTailFade 0.42s ease-out forwards;
+}
+@keyframes starTailFade{
+  0%  {opacity:0.72;transform:scale(1);}
+  100%{opacity:0;   transform:scale(0.15);}
+}
 
 /* ── SCORE POP ── */
 .score-pop{position:absolute;pointer-events:none;z-index:45;font-family:"Fredoka One",cursive;animation:scpop 0.8s ease-out forwards;white-space:nowrap;}
@@ -209,11 +254,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0020;}
 #end-medals{display:none;font-size:22px;letter-spacing:5px;margin-bottom:6px;text-align:center;max-width:280px;}
 #rank-line{display:none;font-family:"Fredoka One",cursive;font-size:clamp(13px,3.5vw,18px);color:#86efac;margin-bottom:6px;text-align:center;}
 
-#name-section{display:flex;gap:8px;align-items:center;margin-bottom:10px;}
-#name-input{font-family:"Fredoka One",cursive;font-size:17px;text-align:center;padding:8px 14px;border-radius:22px;border:2px solid rgba(255,255,255,0.38);background:rgba(255,255,255,0.11);color:#fff;outline:none;width:148px;}
+#name-section{display:flex;flex-direction:column;gap:8px;align-items:center;margin-bottom:10px;}
+.name-label{font-family:"Fredoka One",cursive;font-size:14px;color:rgba(255,255,255,0.65);margin-bottom:0;}
+#name-input{font-family:"Fredoka One",cursive;font-size:17px;text-align:center;padding:8px 14px;border-radius:22px;border:2px solid rgba(255,255,255,0.38);background:rgba(255,255,255,0.11);color:#fff;outline:none;width:180px;}
 #name-input::placeholder{color:rgba(255,255,255,0.32);}
 #name-input:focus{border-color:rgba(255,220,80,0.7);}
-#play-btn{font-family:"Fredoka One",cursive;font-size:clamp(17px,4.5vw,22px);color:#3a0e8f;background:linear-gradient(135deg,#ffe066 0%,#ffb347 100%);border:none;border-radius:50px;padding:11px 36px;cursor:pointer;box-shadow:0 5px 20px rgba(255,200,0,0.48);transition:transform 0.12s;flex-shrink:0;}
+#play-btn{font-family:"Fredoka One",cursive;font-size:clamp(17px,4.5vw,22px);color:#3a0e8f;background:linear-gradient(135deg,#ffe066 0%,#ffb347 100%);border:none;border-radius:50px;padding:11px 48px;cursor:pointer;box-shadow:0 5px 20px rgba(255,200,0,0.48);transition:transform 0.12s;}
 #play-btn:active{transform:scale(0.93);}
 
 /* How-to button + modal */
@@ -266,17 +312,27 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0020;}
 /* Global toplist status */
 #tl-global-status{font-family:"Nunito",sans-serif;font-size:11px;color:rgba(255,255,255,0.3);text-align:right;padding:2px 4px;}
 
-/* ── QUIT BUTTON (during play) ── */
+/* ── QUIT BUTTON (during play — sits below speed strip so it doesn't overlap HUD) ── */
 #quit-btn{
   display:none;
-  position:absolute;top:max(env(safe-area-inset-top,0px),10px);right:12px;z-index:31;
+  position:absolute;top:max(calc(env(safe-area-inset-top,0px) + 62px),72px);right:12px;z-index:31;
   font-family:"Fredoka One",cursive;font-size:13px;
-  color:rgba(255,255,255,0.65);background:rgba(255,255,255,0.10);
+  color:rgba(255,255,255,0.65);background:rgba(10,0,30,0.80);
   border:1px solid rgba(255,255,255,0.22);border-radius:20px;
   padding:5px 13px;cursor:pointer;
 }
 #quit-btn:active{background:rgba(255,80,80,0.3);border-color:#fca5a5;color:#fca5a5;}
 #quit-btn.visible{display:block;}
+
+/* ── SOUND BUTTON (always visible, top-left) ── */
+#sound-btn{
+  position:absolute;top:max(calc(env(safe-area-inset-top,0px) + 62px),72px);left:12px;z-index:31;
+  background:rgba(255,255,255,0.10);border:1.5px solid rgba(255,255,255,0.30);
+  border-radius:8px;color:#fff;font-size:18px;
+  padding:5px 10px;cursor:pointer;line-height:1;
+}
+#sound-btn:active{background:rgba(255,255,255,0.25);}
+#sound-btn.muted{opacity:0.5;}
 
 /* ── DIFFICULTY LABEL ── */
 .diff-label{
@@ -288,3 +344,94 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0020;}
 /* ── DIFFICULTY SECTION spacing ── */
 #diff-section{display:flex;gap:14px;margin-bottom:14px;margin-top:2px;}
 .diff-btn{padding:10px 28px;}
+
+/* ── LIVE RANK HUD ── */
+#rank-hud{
+  font-family:"Fredoka One",cursive;font-size:13px;
+  color:#ffe066;margin-left:4px;min-width:0;
+  transition:opacity 0.3s;white-space:nowrap;
+}
+
+/* ── RAINBOW TRAIL DOTS ── */
+.rainbow-dot{
+  position:absolute;border-radius:50%;pointer-events:none;z-index:7;
+  transition:none;
+}
+
+/* ── UNICORN POWER-UP STATES ── */
+/* Magnet: blue electric pulse */
+@keyframes uniMagnet{
+  0%  {filter:drop-shadow(0 0 6px #67e8f9) drop-shadow(0 0 2px #fff);}
+  50% {filter:drop-shadow(0 0 18px #67e8f9) drop-shadow(0 0 8px #a5f3fc);}
+  100%{filter:drop-shadow(0 0 6px #67e8f9) drop-shadow(0 0 2px #fff);}
+}
+@keyframes uniMagnetShake{
+  0%,100%{transform:translate(-50%,-50%) rotate(-3deg);}
+  25%    {transform:translate(calc(-50% + 3px),-50%) rotate(2deg);}
+  75%    {transform:translate(calc(-50% - 3px),-50%) rotate(-2deg);}
+}
+#unicorn.has-magnet{
+  animation:uniMagnet 0.8s ease-in-out infinite, uniMagnetShake 0.25s ease-in-out infinite;
+}
+
+/* Slow-mo: purple dreamy pulse */
+@keyframes uniSlowmo{
+  0%,100%{filter:drop-shadow(0 0 8px #c4b5fd) drop-shadow(0 0 20px #7c3aed);transform:translate(-50%,-50%) scale(1);}
+  50%    {filter:drop-shadow(0 0 22px #c4b5fd) drop-shadow(0 0 40px #7c3aed);transform:translate(-50%,-50%) scale(1.1);}
+}
+#unicorn.has-slowmo{ animation:uniSlowmo 1.2s ease-in-out infinite; }
+
+/* Rainbow: full rainbow spin glow */
+@keyframes uniRainbow{
+  0%  {filter:drop-shadow(0 0 10px #ff4444);}
+  14% {filter:drop-shadow(0 0 10px #ff8800);}
+  28% {filter:drop-shadow(0 0 10px #ffee00);}
+  42% {filter:drop-shadow(0 0 10px #44dd44);}
+  57% {filter:drop-shadow(0 0 10px #44aaff);}
+  71% {filter:drop-shadow(0 0 10px #aa44ff);}
+  85% {filter:drop-shadow(0 0 10px #ff44cc);}
+  100%{filter:drop-shadow(0 0 10px #ff4444);}
+}
+@keyframes uniRainbowBounce{
+  0%,100%{transform:translate(-50%,-50%) scale(1) rotate(-4deg);}
+  25%    {transform:translate(-50%,-52%) scale(1.08) rotate(2deg);}
+  75%    {transform:translate(-50%,-48%) scale(1.05) rotate(-2deg);}
+}
+#unicorn.has-rainbow{
+  animation:uniRainbow 0.5s linear infinite, uniRainbowBounce 0.7s ease-in-out infinite;
+}
+
+/* ── BONUS ROUND — pulsing golden border ── */
+@keyframes bonusPulse{
+  0%,100%{box-shadow:inset 0 0 0 0 transparent;}
+  50%    {box-shadow:inset 0 0 36px 6px rgba(255,210,0,0.22);}
+}
+#game-wrap.in-bonus{ animation:bonusPulse 1.4s ease-in-out infinite; }
+
+/* ── BONUS ROUND BADGE (persistent indicator) ── */
+#bonus-badge{
+  display:none;
+  position:absolute;top:max(calc(env(safe-area-inset-top,0px) + 62px),72px);left:12px;z-index:31;
+  font-family:"Fredoka One",cursive;font-size:12px;color:#ffe066;
+  background:rgba(60,30,0,0.90);border:1.5px solid rgba(255,200,0,0.55);
+  border-radius:18px;padding:4px 12px;white-space:nowrap;
+  animation:puPulse 1s ease-in-out infinite alternate;
+}
+#bonus-badge.show{display:block;}
+
+/* ── BACK TO LANDING LINK ── */
+.back-link{
+  font-family:"Fredoka One",cursive;font-size:13px;
+  color:rgba(255,255,255,0.40);text-decoration:none;
+  margin-top:4px;margin-bottom:8px;display:inline-block;
+  transition:color 0.2s;
+}
+.back-link:hover,.back-link:active{color:rgba(255,255,255,0.75);}
+
+/* ── ALLA TAB — difficulty badge ── */
+.diff-badge{
+  display:inline-block;font-family:"Fredoka One",cursive;font-size:10px;
+  border-radius:8px;padding:1px 6px;margin-left:4px;vertical-align:middle;
+}
+.diff-badge.barn{ background:rgba(134,239,172,0.2);color:#86efac; }
+.diff-badge.vuxen{ background:rgba(252,165,165,0.2);color:#fca5a5; }

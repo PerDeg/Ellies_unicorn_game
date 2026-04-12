@@ -5,33 +5,35 @@
 const DIFF = {
   barn: {
     label:       "Barn",
-    maxMisses:   5,
+    maxMisses:   3,
+    startMisses: 0,
     baseSpeed:   1.2,
-    speedInc:    0.04,
-    maxSpeed:    3.5,
+    speedInc:    0.08,
+    maxSpeed:    5.6,
     speedReset:  1.2,
-    spawnBase:   1400,
-    spawnMin:    900,
-    spawnLevel:  15,
+    spawnBase:   1200,
+    spawnMin:    550,
+    spawnLevel:  20,
     multiThresh: [0, 8, 15, 25, 35, 50],
     roundSize:   8,
     perfBonus:   3,
-    catchRadius: 95,
+    catchRadius: 55,
   },
   vuxen: {
     label:       "Vuxen",
     maxMisses:   3,
+    startMisses: 2,      // starts with only 1 life out of max 3
     baseSpeed:   2.5,
-    speedInc:    0.18,
-    maxSpeed:    11.0,
+    speedInc:    0.22,
+    maxSpeed:    9.8,
     speedReset:  2.5,
     spawnBase:   1000,
-    spawnMin:    380,
+    spawnMin:    360,
     spawnLevel:  14,
     multiThresh: [0, 5, 10, 15, 20, 25],
     roundSize:   10,
     perfBonus:   5,
-    catchRadius: 58,
+    catchRadius: 36,
   },
 };
 
@@ -39,31 +41,43 @@ const DIFF = {
 //  SPRITE TYPES
 // ══════════════════════════════════════
 const STAR_TYPES = [
-  { emoji: "⭐", pts: 1, size: 38, bad: false },
-  { emoji: "🌠", pts: 2, size: 36, bad: false },
-  { emoji: "💫", pts: 3, size: 40, bad: false },
+  { emoji: "⭐", pts: 5, size: 38, bad: false },
+  { emoji: "🌠", pts: 5, size: 36, bad: false },
+  { emoji: "💫", pts: 5, size: 40, bad: false },
   { emoji: "🌟", pts: 5, size: 42, bad: false },
-  { emoji: "✨", pts: 8, size: 38, bad: false },
+  { emoji: "✨", pts: 5, size: 38, bad: false },
 ];
 const STAR_WEIGHTS = [40, 25, 18, 12, 5];
 
-// Catching a bad sprite costs points + breaks streak. Avoiding is neutral.
+// Catching a bad sprite breaks streak. 💀 costs a life, 🌑 costs points only.
 const BAD_TYPES = [
-  { emoji: "💀", pts: -3, size: 36, bad: true, label: "💀=-3p" },
-  { emoji: "🌑", pts: -5, size: 38, bad: true, label: "🌑=-5p" },
+  { emoji: "💀", pts: 0,   size: 36, bad: true, takesLife: true, label: "💀 -Liv!"  },
+  { emoji: "🌑", pts: -15, size: 38, bad: true, label: "🌑 -15p" },
 ];
 
-// Life sprites: 💚/☯️ give life, 💔 costs a life
+// Life sprites — all give a life (no negative ones; skull handles that)
 const LIFE_TYPES = [
-  { emoji: "💔", size: 34, givesLife: false, life: true },
-  { emoji: "💚", size: 34, givesLife: true,  life: true },
-  { emoji: "☯️",  size: 34, givesLife: true,  life: true },
+  { emoji: "💚", size: 34, givesLife: true, life: true },
+  { emoji: "☯️",  size: 34, givesLife: true, life: true },
+  { emoji: "🌺", size: 34, givesLife: true, life: true },
 ];
 
 const POWERUP_TYPES = [
-  { id: "magnet", emoji: "🧲", label: "Magnet!",  dur: 6000, color: "#67e8f9" },
-  { id: "slowmo", emoji: "⏱️",  label: "Slow-mo!", dur: 5000, color: "#c4b5fd" },
-  { id: "shield", emoji: "🛡️",  label: "Sköld!",   dur: 8000, color: "#86efac" },
+  { id: "magnet",  emoji: "🧲", label: "Magnet!",   dur: 6000, color: "#67e8f9" },
+  { id: "slowmo",  emoji: "⏱️",  label: "Slow-mo!",  dur: 5000, color: "#c4b5fd", onlyDiff: "vuxen" },
+  { id: "rainbow", emoji: "🌈", label: "Regnbåge!", dur: 7000, color: "#ff9de2" },
+];
+
+// Party-mode sprite types (used during "party" challenge round)
+const PARTY_TYPES = [
+  { emoji: "🎂", pts: 5, size: 40 },
+  { emoji: "🍰", pts: 5, size: 38 },
+  { emoji: "🎉", pts: 5, size: 38 },
+  { emoji: "🎊", pts: 5, size: 38 },
+  { emoji: "🥳", pts: 5, size: 40 },
+  { emoji: "🎈", pts: 5, size: 36 },
+  { emoji: "🎁", pts: 5, size: 38 },
+  { emoji: "🎀", pts: 5, size: 36 },
 ];
 
 // ══════════════════════════════════════
@@ -86,6 +100,8 @@ const CHALLENGES = [
   { id: "double",  label: "💫 Dubbla stjärnor!", doubleSpawn: true, music: "challenge" },
   { id: "golden",  label: "✨ Guldrusning!", forceType: 4, music: "golden" },
   { id: "party",   label: "🎉 Festläge!", partyMode: true, music: "challenge" },
+  { id: "party",   label: "🎉 Festläge!", partyMode: true, music: "challenge" },
+  { id: "party",   label: "🎉 Festläge!", partyMode: true, music: "challenge" }, // weighted 3×
 ];
 
 // ══════════════════════════════════════
@@ -101,8 +117,23 @@ const STREAK_WORDS= ["Bra! 🌟","Häftigt! 💫","Flyger! 🦋","I eld! 🔥","
 //  SPAWN RATES
 // ══════════════════════════════════════
 const POWERUP_SPAWN_CHANCE = 0.05;
-function lifeChance()      { return 0.04; }
-function badChance(level)  { return Math.min(0.10 + level * 0.02, 0.28); }
+// Per-difficulty spawn rates. Barn uses gentler curves than Vuxen.
+function lifeChance(difficulty, totalCaught){
+  if(difficulty==="vuxen") return Math.max(0.020 - totalCaught*0.0001,  0.008);
+  return                          Math.max(0.015 - totalCaught*0.00005, 0.008);
+}
+function skullChance(difficulty, level){
+  if(difficulty==="vuxen") return Math.min(0.07 + level*0.015, 0.20);
+  // Barn: gentle 1-11, then sharply ramps from level 12
+  if(level>=12) return Math.min(0.08 + (level-12)*0.015, 0.22);
+  return 0.02 + level*0.005;
+}
+function moonChance(difficulty, level){
+  if(difficulty==="vuxen") return Math.min(0.14 + level*0.022, 0.36);
+  // Barn: same two-phase curve
+  if(level>=12) return Math.min(0.15 + (level-12)*0.020, 0.35);
+  return 0.04 + level*0.009;
+}
 
 // ══════════════════════════════════════
 //  SEEDED RNG

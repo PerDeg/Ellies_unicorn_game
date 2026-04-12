@@ -1,0 +1,1737 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Ellies Enhörningsspel 🦄</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;height:100%;overflow:hidden;background:#0d0020;}
+.bg-star{position:absolute;border-radius:50%;background:#fff;animation:twinkle var(--d) ease-in-out infinite alternate;opacity:0;}
+@keyframes twinkle{0%{opacity:0.05}100%{opacity:0.75}}
+
+/* ── DESKTOP SHELL — constrains game to phone width ── */
+#outer-shell{
+  width:100%;height:100%;
+  display:flex;justify-content:center;align-items:stretch;
+  background:#0d0020;
+}
+#game-wrap{
+  flex:none;
+  width:100%;
+  max-width:480px;
+}
+
+/* ── HUD ── */
+#top-bar{
+  position:absolute;top:max(env(safe-area-inset-top,0px),10px);
+  left:50%;transform:translateX(-50%);z-index:30;
+  display:flex;align-items:center;gap:8px;
+  background:rgba(10,0,30,0.82);
+  border:1.5px solid rgba(255,255,255,0.22);border-radius:40px;
+  padding:5px 16px;font-family:"Fredoka One",cursive;font-size:17px;color:#fff;white-space:nowrap;
+}
+.sep{color:rgba(255,255,255,0.22);font-size:11px;}
+.hval{color:#ffe066;}
+#hearts-display{display:flex;gap:3px;align-items:center;font-size:15px;}
+.heart{transition:transform 0.2s,opacity 0.3s;}
+.heart.lost{opacity:0.18;transform:scale(0.65);}
+
+/* ── SPEED BAR ── */
+#speed-strip{
+  position:absolute;top:max(env(safe-area-inset-top,0px),52px);
+  left:50%;transform:translateX(-50%);z-index:28;
+  width:min(240px,65vw);height:4px;border-radius:4px;
+  background:rgba(255,255,255,0.10);overflow:hidden;
+}
+#speed-fill{height:100%;width:0%;border-radius:4px;transition:width 0.25s;}
+
+/* ── ROUND PROGRESS BAR ── */
+#round-bar-wrap{
+  position:absolute;bottom:105px;left:50%;transform:translateX(-50%);
+  z-index:28;width:min(280px,75vw);
+}
+#round-label{
+  font-family:"Fredoka One",cursive;font-size:13px;color:rgba(255,255,255,0.6);
+  text-align:center;margin-bottom:4px;
+  display:flex;justify-content:space-between;
+}
+#round-track{
+  width:100%;height:10px;border-radius:6px;
+  background:rgba(255,255,255,0.15);overflow:hidden;
+  border:1px solid rgba(255,255,255,0.18);
+}
+#round-fill{height:100%;width:0%;border-radius:6px;transition:width 0.2s;}
+#round-fill.clean{background:linear-gradient(90deg,#86efac,#22d3ee);}
+#round-fill.dirty{background:linear-gradient(90deg,#fca5a5,#f472b6);}
+
+/* ── COMBO RING ── */
+#combo-ring{
+  position:absolute;border-radius:50%;z-index:9;pointer-events:none;
+  transform:translate(-50%,-50%);width:88px;height:88px;
+  border:3px solid transparent;transition:border-color 0.2s;
+}
+#combo-ring.vuxen{width:60px;height:60px;}
+#combo-ring.c1{border-color:#a78bfa;}
+#combo-ring.c2{border-color:#ff9de2;}
+#combo-ring.c3{border-color:#ffe066;}
+#combo-ring.c4{border-color:#67e8f9;}
+#combo-ring.c5{border-color:#ff80ff;animation:ringPulse 0.7s ease-in-out infinite alternate;}
+@keyframes ringPulse{0%{transform:translate(-50%,-50%) scale(1);border-color:#ff80ff;}100%{transform:translate(-50%,-50%) scale(1.08);border-color:#ffe066;}}
+
+/* ── UNICORN ── */
+#unicorn{position:absolute;font-size:58px;z-index:10;pointer-events:none;transform:translate(-50%,-50%);}
+#unicorn.vuxen{font-size:38px;}
+
+/* ── FALLING SPRITES ── */
+.fstar{position:absolute;pointer-events:none;z-index:8;line-height:1;}
+.fbad{position:absolute;pointer-events:none;z-index:8;line-height:1;transform:rotate(-12deg);}
+
+/* ── SCORE POP ── */
+.score-pop{position:absolute;pointer-events:none;z-index:45;font-family:"Fredoka One",cursive;animation:scpop 0.8s ease-out forwards;white-space:nowrap;}
+@keyframes scpop{0%{opacity:0;transform:translate(-50%,-20%) scale(0.4);}20%{opacity:1;transform:translate(-50%,-50%) scale(1.1);}75%{opacity:1;transform:translate(-50%,-100%);}100%{opacity:0;transform:translate(-50%,-140%) scale(0.9);}}
+
+/* ── COMBO FLASH ── */
+#combo-flash{position:absolute;top:35%;left:50%;transform:translate(-50%,-50%);z-index:43;pointer-events:none;text-align:center;font-family:"Fredoka One",cursive;font-size:30px;opacity:0;transition:opacity 0.18s;white-space:nowrap;}
+
+/* ── EVENT BANNER ── */
+#event-banner{
+  position:absolute;top:62px;left:50%;transform:translateX(-50%);
+  z-index:38;pointer-events:none;text-align:center;
+  font-family:"Fredoka One",cursive;font-size:clamp(12px,3vw,17px);
+  border-radius:20px;padding:5px 18px;
+  opacity:0;transition:opacity 0.3s;white-space:nowrap;border:1.5px solid transparent;
+}
+#event-banner.normal{background:rgba(20,0,50,0.88);border-color:rgba(255,255,255,0.28);color:#fff;}
+#event-banner.perfect{background:rgba(80,40,0,0.92);border-color:rgba(255,220,80,0.65);color:#ffe066;font-size:clamp(14px,3.8vw,20px);}
+#event-banner.challenge{background:rgba(60,0,100,0.92);border-color:rgba(200,100,255,0.55);color:#ffccff;}
+#event-banner.round-end{background:rgba(20,0,50,0.92);border-color:rgba(140,80,255,0.5);color:#c4b5fd;}
+#event-banner.danger{background:rgba(80,0,0,0.92);border-color:rgba(255,60,60,0.65);color:#fca5a5;}
+#event-banner.powerup{background:rgba(0,60,80,0.92);border-color:rgba(100,220,255,0.65);color:#67e8f9;}
+#event-banner.show{opacity:1;}
+
+/* ── CENTRE FLASH ── */
+#centre-flash{position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);font-family:"Fredoka One",cursive;font-size:24px;color:#ffe066;z-index:40;opacity:0;pointer-events:none;text-align:center;line-height:1.25;transition:opacity 0.22s;white-space:pre-line;max-width:76vw;}
+
+/* ── PERFECT ROUND TOAST ── */
+#perfect-toast{
+  position:absolute;top:62px;left:12px;
+  z-index:35;pointer-events:none;
+  font-family:"Fredoka One",cursive;font-size:13px;
+  background:rgba(60,30,0,0.92);border:1.5px solid rgba(255,200,0,0.5);
+  border-radius:18px;padding:4px 12px;color:#ffe066;
+  opacity:0;transition:opacity 0.3s;white-space:nowrap;
+}
+
+/* ── LEVEL TOAST ── */
+#level-toast{
+  position:absolute;top:62px;right:12px;
+  z-index:35;pointer-events:none;
+  font-family:"Fredoka One",cursive;font-size:13px;color:#ffe066;
+  background:rgba(10,0,30,0.88);border:1px solid rgba(255,200,0,0.35);
+  border-radius:18px;padding:4px 12px;
+  opacity:0;transition:opacity 0.3s;white-space:nowrap;
+}
+
+/* ── POWER-UP INDICATOR ── */
+#powerup-bar{
+  position:absolute;bottom:115px;left:14px;z-index:32;pointer-events:none;
+  display:flex;flex-direction:column;gap:4px;align-items:flex-start;
+}
+.pu-active{
+  font-family:"Fredoka One",cursive;font-size:13px;color:#fff;
+  background:rgba(0,40,60,0.88);border:1.5px solid rgba(100,220,255,0.5);
+  border-radius:16px;padding:3px 10px;white-space:nowrap;
+  animation:puPulse 1s ease-in-out infinite alternate;
+}
+@keyframes puPulse{0%{opacity:0.8;}100%{opacity:1;}}
+.pu-active .pu-timer{
+  display:inline-block;font-size:10px;
+  background:rgba(255,255,255,0.15);border-radius:8px;
+  padding:1px 5px;margin-left:4px;vertical-align:middle;
+}
+
+/* ── LEVEL THEME / GAME WRAP ── */
+/* Additional game-wrap properties (layout defined in outer-shell block above) */
+#game-wrap{
+  position:relative;height:100dvh;overflow:hidden;
+  touch-action:none;
+  transition:background 2s ease;
+}
+
+/* ── PARTICLES ── */
+.particle{position:absolute;border-radius:50%;pointer-events:none;z-index:20;animation:pout var(--dur) ease-out forwards;}
+@keyframes pout{0%{opacity:1;transform:translate(0,0) scale(1);}85%{opacity:0;}100%{opacity:0;transform:translate(var(--tx),var(--ty)) scale(0);}}
+.catch-pop{position:absolute;pointer-events:none;z-index:25;font-size:18px;animation:cpop 0.55s ease-out forwards;}
+@keyframes cpop{0%{opacity:1;transform:translate(-50%,-50%) scale(0.3);}35%{opacity:1;transform:translate(-50%,-50%) scale(1.0);}100%{opacity:0;transform:translate(-50%,-95%) scale(0.8);}}
+.miss-flash{position:absolute;pointer-events:none;z-index:25;font-family:"Fredoka One",cursive;font-size:16px;color:#ff9de2;animation:mflash 0.6s ease-out forwards;}
+@keyframes mflash{0%{opacity:1;transform:translate(-50%,-50%) scale(0.5);}35%{opacity:1;transform:translate(-50%,-50%);}100%{opacity:0;transform:translate(-50%,-90%) scale(0.8);}}
+.trail{position:absolute;border-radius:50%;pointer-events:none;z-index:6;animation:tfade 0.3s ease-out forwards;}
+@keyframes tfade{0%{opacity:0.35;transform:scale(1)}100%{opacity:0;transform:scale(0.1)}}
+.firework{position:absolute;pointer-events:none;z-index:23;}
+.fw-spark{position:absolute;width:4px;height:4px;border-radius:50%;animation:fwspark var(--d) ease-out forwards;}
+@keyframes fwspark{0%{opacity:1;transform:translate(0,0);}100%{opacity:0;transform:translate(var(--x),var(--y));}}
+
+/* ── JOYSTICK ── */
+#joystick-zone{display:none;position:absolute;bottom:26px;left:50%;transform:translateX(-50%);z-index:50;width:min(78vw,360px);height:68px;}
+#joy-track{width:100%;height:100%;border-radius:50px;background:rgba(40,20,80,0.85);border:2px solid rgba(255,255,255,0.3);position:relative;overflow:hidden;}
+#joy-knob{width:54px;height:54px;border-radius:50%;background:rgba(255,255,255,0.55);border:2px solid rgba(255,255,255,0.7);box-shadow:0 4px 14px rgba(160,80,255,0.5);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;}
+@media(pointer:coarse){#joystick-zone{display:block;}}
+#key-hint{display:none;position:absolute;bottom:10px;left:50%;transform:translateX(-50%);z-index:30;font-family:"Fredoka One",cursive;font-size:11px;color:rgba(255,255,255,0.25);pointer-events:none;}
+@media(pointer:fine){#key-hint{display:block;}}
+#hills{position:absolute;bottom:0;left:0;width:100%;pointer-events:none;z-index:2;}
+
+/* ══════════  OVERLAY  ══════════ */
+#overlay{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;z-index:50;
+  background:radial-gradient(ellipse at center,rgba(55,0,95,0.93) 0%,rgba(6,0,25,0.98) 100%);
+  overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:20px;
+}
+#overlay.hidden{display:none;}
+#ov-top{display:flex;flex-direction:column;align-items:center;padding:18px 18px 0;width:100%;flex-shrink:0;}
+.ov-uni{font-size:60px;animation:bounce 1.2s ease-in-out infinite alternate;line-height:1;margin-bottom:3px;}
+@keyframes bounce{0%{transform:translateY(0) rotate(-5deg)}100%{transform:translateY(-10px) rotate(5deg)}}
+#overlay h1{font-family:"Fredoka One",cursive;font-size:clamp(18px,5.5vw,36px);color:#ffe066;text-shadow:0 0 20px rgba(255,200,0,0.55);line-height:1.1;margin-bottom:3px;text-align:center;}
+#overlay-sub{font-family:"Nunito",sans-serif;font-size:clamp(11px,2.8vw,15px);color:rgba(255,255,255,0.65);margin-bottom:8px;text-align:center;}
+
+/* Difficulty picker */
+.diff-btn{
+  font-family:"Fredoka One",cursive;font-size:clamp(15px,4vw,20px);
+  border:2px solid rgba(255,255,255,0.3);border-radius:30px;
+  padding:8px 22px;cursor:pointer;transition:transform 0.12s,border-color 0.2s,background 0.2s;
+  color:#fff;background:rgba(255,255,255,0.08);
+}
+.diff-btn:active{transform:scale(0.93);}
+.diff-btn.selected.barn{background:rgba(100,220,160,0.28);border-color:#86efac;color:#86efac;}
+.diff-btn.selected.vuxen{background:rgba(255,80,80,0.28);border-color:#fca5a5;color:#fca5a5;}
+
+/* Stats card */
+#stats-card{display:none;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:16px;padding:9px 16px;margin-bottom:8px;width:100%;max-width:300px;}
+.stat-row{display:flex;align-items:center;justify-content:space-between;padding:3px 0;}
+.stat-row+.stat-row{border-top:1px solid rgba(255,255,255,0.07);}
+.stat-label{font-family:"Nunito",sans-serif;font-size:12px;color:rgba(255,255,255,0.5);}
+.stat-val{font-family:"Fredoka One",cursive;font-size:18px;color:#ffe066;}
+.stat-val.pink{color:#ff9de2;}.stat-val.purple{color:#c4b5fd;}.stat-val.green{color:#86efac;}
+#end-medals{display:none;font-size:22px;letter-spacing:5px;margin-bottom:6px;text-align:center;max-width:280px;}
+#rank-line{display:none;font-family:"Fredoka One",cursive;font-size:clamp(13px,3.5vw,18px);color:#86efac;margin-bottom:6px;text-align:center;}
+
+#name-section{display:flex;gap:8px;align-items:center;margin-bottom:10px;}
+#name-input{font-family:"Fredoka One",cursive;font-size:17px;text-align:center;padding:8px 14px;border-radius:22px;border:2px solid rgba(255,255,255,0.38);background:rgba(255,255,255,0.11);color:#fff;outline:none;width:148px;}
+#name-input::placeholder{color:rgba(255,255,255,0.32);}
+#name-input:focus{border-color:rgba(255,220,80,0.7);}
+#play-btn{font-family:"Fredoka One",cursive;font-size:clamp(17px,4.5vw,22px);color:#3a0e8f;background:linear-gradient(135deg,#ffe066 0%,#ffb347 100%);border:none;border-radius:50px;padding:11px 36px;cursor:pointer;box-shadow:0 5px 20px rgba(255,200,0,0.48);transition:transform 0.12s;flex-shrink:0;}
+#play-btn:active{transform:scale(0.93);}
+
+/* How-to button + modal */
+#how-btn{
+  font-family:"Fredoka One",cursive;font-size:14px;color:rgba(255,255,255,0.6);
+  background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);
+  border-radius:20px;padding:5px 16px;cursor:pointer;margin-bottom:9px;
+}
+#how-btn:active{background:rgba(255,255,255,0.15);}
+#how-modal{
+  display:none;position:fixed;inset:0;z-index:80;
+  background:rgba(8,0,28,0.92);
+  flex-direction:column;align-items:center;justify-content:center;padding:20px;
+}
+#how-modal.show{display:flex;}
+#how-box{
+  background:rgba(30,0,60,0.98);border:1.5px solid rgba(160,80,255,0.4);
+  border-radius:22px;padding:20px 22px;max-width:340px;width:100%;
+}
+#how-box h2{font-family:"Fredoka One",cursive;font-size:20px;color:#ffe066;margin-bottom:12px;text-align:center;}
+.how-section{margin-bottom:10px;}
+.how-section h3{font-family:"Fredoka One",cursive;font-size:14px;color:#c4b5fd;margin-bottom:4px;}
+.how-row{display:flex;align-items:center;gap:8px;font-family:"Nunito",sans-serif;font-size:13px;color:rgba(255,255,255,0.78);margin-bottom:3px;}
+.how-icon{font-size:18px;width:26px;flex-shrink:0;}
+.how-badge{display:inline-block;font-family:"Fredoka One",cursive;font-size:10px;border-radius:8px;padding:1px 6px;margin-left:4px;}
+.how-badge.good{background:rgba(134,239,172,0.2);color:#86efac;}
+.how-badge.bad{background:rgba(252,165,165,0.2);color:#fca5a5;}
+.how-badge.life{background:rgba(167,139,250,0.2);color:#c4b5fd;}
+#how-close{
+  font-family:"Fredoka One",cursive;font-size:17px;color:#3a0e8f;
+  background:linear-gradient(135deg,#ffe066,#ffb347);
+  border:none;border-radius:40px;padding:10px 36px;cursor:pointer;
+  margin-top:14px;display:block;width:100%;
+}
+
+/* Toplist */
+#ov-toplist{width:100%;max-width:360px;padding:0 14px 6px;flex-shrink:0;}
+#tl-tabs{display:flex;gap:8px;margin-bottom:6px;justify-content:center;}
+.tl-tab{font-family:"Fredoka One",cursive;font-size:14px;color:rgba(255,255,255,0.45);cursor:pointer;padding:3px 12px;border-radius:16px;border:1px solid rgba(255,255,255,0.12);}
+.tl-tab.active{color:#ffe066;border-color:rgba(255,200,0,0.4);background:rgba(255,200,0,0.12);}
+#ov-toplist h3{font-family:"Fredoka One",cursive;font-size:16px;color:#ffe066;margin-bottom:6px;text-align:center;}
+#tl-table{width:100%;border-collapse:collapse;font-family:"Fredoka One",cursive;}
+#tl-table th{color:rgba(255,255,255,0.35);font-size:11px;padding:3px 7px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.08);}
+#tl-table td{color:#fff;font-size:15px;padding:4px 7px;}
+#tl-table tr.me td{color:#ffe066;}
+#tl-table tr:nth-child(1) td{font-size:17px;}
+#tl-table tr:nth-child(2) td{color:#d0d0d0;}
+#tl-table tr:nth-child(3) td{color:#ffb347;}
+.tl-empty{font-family:"Nunito",sans-serif;font-size:12px;color:rgba(255,255,255,0.25);text-align:center;padding:10px;}
+/* Global toplist status */
+#tl-global-status{font-family:"Nunito",sans-serif;font-size:11px;color:rgba(255,255,255,0.3);text-align:right;padding:2px 4px;}
+
+/* ── QUIT BUTTON (during play) ── */
+#quit-btn{
+  display:none;
+  position:absolute;top:max(env(safe-area-inset-top,0px),10px);right:12px;z-index:31;
+  font-family:"Fredoka One",cursive;font-size:13px;
+  color:rgba(255,255,255,0.65);background:rgba(255,255,255,0.10);
+  border:1px solid rgba(255,255,255,0.22);border-radius:20px;
+  padding:5px 13px;cursor:pointer;
+}
+#quit-btn:active{background:rgba(255,80,80,0.3);border-color:#fca5a5;color:#fca5a5;}
+#quit-btn.visible{display:block;}
+
+/* ── DIFFICULTY LABEL ── */
+.diff-label{
+  font-family:"Fredoka One",cursive;font-size:13px;
+  color:rgba(255,255,255,0.55);margin-bottom:6px;margin-top:4px;
+  text-align:center;letter-spacing:0.5px;
+}
+
+/* ── DIFFICULTY SECTION spacing ── */
+#diff-section{display:flex;gap:14px;margin-bottom:14px;margin-top:2px;}
+.diff-btn{padding:10px 28px;}
+
+/* ── LIVE RANK HUD ── */
+#rank-hud{
+  font-family:"Fredoka One",cursive;font-size:13px;
+  color:#ffe066;margin-left:4px;min-width:0;
+  transition:opacity 0.3s;white-space:nowrap;
+}
+
+/* ── RAINBOW TRAIL DOTS ── */
+.rainbow-dot{
+  position:absolute;border-radius:50%;pointer-events:none;z-index:7;
+  transition:none;
+}
+
+/* ── UNICORN POWER-UP STATES ── */
+/* Magnet: blue electric pulse */
+@keyframes uniMagnet{
+  0%  {filter:drop-shadow(0 0 6px #67e8f9) drop-shadow(0 0 2px #fff);}
+  50% {filter:drop-shadow(0 0 18px #67e8f9) drop-shadow(0 0 8px #a5f3fc);}
+  100%{filter:drop-shadow(0 0 6px #67e8f9) drop-shadow(0 0 2px #fff);}
+}
+@keyframes uniMagnetShake{
+  0%,100%{transform:translate(-50%,-50%) rotate(-3deg);}
+  25%    {transform:translate(calc(-50% + 3px),-50%) rotate(2deg);}
+  75%    {transform:translate(calc(-50% - 3px),-50%) rotate(-2deg);}
+}
+#unicorn.has-magnet{
+  animation:uniMagnet 0.8s ease-in-out infinite, uniMagnetShake 0.25s ease-in-out infinite;
+}
+
+/* Slow-mo: purple dreamy pulse */
+@keyframes uniSlowmo{
+  0%,100%{filter:drop-shadow(0 0 8px #c4b5fd) drop-shadow(0 0 20px #7c3aed);transform:translate(-50%,-50%) scale(1);}
+  50%    {filter:drop-shadow(0 0 22px #c4b5fd) drop-shadow(0 0 40px #7c3aed);transform:translate(-50%,-50%) scale(1.1);}
+}
+#unicorn.has-slowmo{ animation:uniSlowmo 1.2s ease-in-out infinite; }
+
+/* Rainbow: full rainbow spin glow */
+@keyframes uniRainbow{
+  0%  {filter:drop-shadow(0 0 10px #ff4444);}
+  14% {filter:drop-shadow(0 0 10px #ff8800);}
+  28% {filter:drop-shadow(0 0 10px #ffee00);}
+  42% {filter:drop-shadow(0 0 10px #44dd44);}
+  57% {filter:drop-shadow(0 0 10px #44aaff);}
+  71% {filter:drop-shadow(0 0 10px #aa44ff);}
+  85% {filter:drop-shadow(0 0 10px #ff44cc);}
+  100%{filter:drop-shadow(0 0 10px #ff4444);}
+}
+@keyframes uniRainbowBounce{
+  0%,100%{transform:translate(-50%,-50%) scale(1) rotate(-4deg);}
+  25%    {transform:translate(-50%,-52%) scale(1.08) rotate(2deg);}
+  75%    {transform:translate(-50%,-48%) scale(1.05) rotate(-2deg);}
+}
+#unicorn.has-rainbow{
+  animation:uniRainbow 0.5s linear infinite, uniRainbowBounce 0.7s ease-in-out infinite;
+}
+
+</style>
+</head>
+<body>
+
+<!-- Outer shell: constrains width on desktop -->
+<div id="outer-shell">
+
+<div id="game-wrap">
+
+  <!-- HUD -->
+  <div id="top-bar">
+    ⭐<span class="hval" id="score-val">0</span><span id="rank-hud"></span>
+    <span class="sep">|</span>
+    Niv.<span class="hval" id="level-val">1</span>
+    <span class="sep">|</span>
+    <div id="hearts-display"></div>
+    <span class="sep">|</span>
+    🔥<span class="hval" id="streak-val">0</span>
+    <span class="sep">|</span>
+    ✨<span class="hval" id="multi-val">×1</span>
+  </div>
+  <div id="speed-strip"><div id="speed-fill"></div></div>
+
+  <!-- Quit button (visible during play) -->
+  <button id="quit-btn">Avsluta ✕</button>
+
+  <!-- Round progress bar -->
+  <div id="round-bar-wrap">
+    <div id="round-label">
+      <span id="round-label-left">Omgång 1</span>
+      <span id="round-label-right">0/10 🎯</span>
+    </div>
+    <div id="round-track"><div id="round-fill" class="clean"></div></div>
+  </div>
+
+  <!-- Combo ring + unicorn -->
+  <div id="combo-ring"></div>
+  <div id="combo-flash"></div>
+  <div id="unicorn">🦄</div>
+
+  <div id="powerup-bar"></div>
+
+  <div id="perfect-toast"></div>
+  <div id="event-banner" class="normal"></div>
+  <div id="centre-flash"></div>
+
+  <div id="joystick-zone">
+    <div id="joy-track"><div id="joy-knob"></div></div>
+  </div>
+  <div id="key-hint">⬅ ➡ piltangenter</div>
+
+  <svg id="hills" viewBox="0 0 400 80" preserveAspectRatio="none" height="80">
+    <ellipse cx="60"  cy="80" rx="110" ry="55" fill="#6b21a8" opacity="0.6"/>
+    <ellipse cx="200" cy="80" rx="150" ry="65" fill="#7e22ce" opacity="0.5"/>
+    <ellipse cx="350" cy="80" rx="120" ry="50" fill="#581c87" opacity="0.6"/>
+  </svg>
+
+  <!-- How to play modal -->
+  <div id="how-modal">
+    <div id="how-box">
+      <h2>❓ Hur spelar man?</h2>
+
+      <div class="how-section">
+        <h3>🕹️ Styrning</h3>
+        <div class="how-row"><span class="how-icon">📱</span>Dra joysticken vänster / höger</div>
+        <div class="how-row"><span class="how-icon">⌨️</span>Piltangenter eller A / D</div>
+      </div>
+
+      <div class="how-section">
+        <h3>⭐ Stjärnor — fånga!</h3>
+        <div class="how-row"><span class="how-icon">⭐</span>1p <span class="how-badge good">fånga</span></div>
+        <div class="how-row"><span class="how-icon">🌠</span>2p <span class="how-badge good">fånga</span></div>
+        <div class="how-row"><span class="how-icon">💫</span>3p <span class="how-badge good">fånga</span></div>
+        <div class="how-row"><span class="how-icon">🌟</span>5p <span class="how-badge good">fånga</span></div>
+        <div class="how-row"><span class="how-icon">✨</span>8p <span class="how-badge good">fånga</span></div>
+      </div>
+
+      <div class="how-section" id="how-vuxen" style="display:none">
+        <h3>☠️ Farliga sprites — undvik!</h3>
+        <div class="how-row"><span class="how-icon">💀</span>−3p om du tar dem <span class="how-badge bad">undvik</span></div>
+        <div class="how-row"><span class="how-icon">🌑</span>−5p om du tar dem <span class="how-badge bad">undvik</span></div>
+        <div class="how-row"><span class="how-icon">💔</span>Tappar ett liv — <strong>skölden</strong> skyddar! <span class="how-badge bad">undvik</span></div>
+        <h3 style="margin-top:8px">💚 Bonussprites — fånga!</h3>
+        <div class="how-row"><span class="how-icon">💚</span>Får ett extra liv <span class="how-badge life">fånga</span></div>
+        <div class="how-row"><span class="how-icon">☯️</span>Får ett extra liv <span class="how-badge life">fånga</span></div>
+        <h3 style="margin-top:8px">⚡ Power-ups — fånga!</h3>
+        <div class="how-row"><span class="how-icon">🧲</span>Magnet — drar till sig poängstjärnor</div>
+        <div class="how-row"><span class="how-icon">⏱️</span>Slow-mo — saktar ner allt</div>
+        <div class="how-row"><span class="how-icon">🌈</span>Regnbåge — osynligt läge, fångar allt!</div>
+        <div class="how-row" style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px">Att undvika farliga sprites kostar ingenting.</div>
+      </div>
+
+      <div class="how-section">
+        <h3>🔥 Combo</h3>
+        <div class="how-row"><span class="how-icon">🔥</span>Streak ger multiplikator upp till ×6</div>
+        <div class="how-row"><span class="how-icon">💚</span>Perfekt omgång = bonuspoäng!</div>
+      </div>
+
+      <button id="how-close">Stäng</button>
+    </div>
+  </div>
+
+  <!-- Level-up toast -->
+  <div id="level-toast"></div>
+
+  <!-- Overlay (start / game-over screen) -->
+  <div id="overlay">
+    <div id="ov-top">
+      <div class="ov-uni">🦄</div>
+      <h1 id="overlay-title">Grattis på<br>Födelsedagen Ellie! 🎂</h1>
+      <p id="overlay-sub">Fånga stjärnorna och samla poäng! ✨</p>
+
+      <div id="end-medals"></div>
+      <div id="rank-line"></div>
+
+      <div id="stats-card">
+        <div class="stat-row"><span class="stat-label">Poäng</span><span class="stat-val" id="stat-score">0</span></div>
+        <div class="stat-row"><span class="stat-label">Stjärnor fångade</span><span class="stat-val" id="stat-caught">0</span></div>
+        <div class="stat-row"><span class="stat-label">Bästa streak</span><span class="stat-val pink" id="stat-streak">0</span></div>
+        <div class="stat-row"><span class="stat-label">Högsta multiplikator</span><span class="stat-val purple" id="stat-multi">×1</span></div>
+        <div class="stat-row"><span class="stat-label">Perfekta omgångar</span><span class="stat-val green" id="stat-perfect">0</span></div>
+      </div>
+
+      <!-- How to play -->
+      <button id="how-btn">❓ Hur spelar man?</button>
+
+      <!-- Difficulty picker -->
+      <p class="diff-label">Välj svårighetsgrad</p>
+      <div id="diff-section">
+        <button class="diff-btn barn selected" id="btn-barn" data-diff="barn">🐣 Barn</button>
+        <button class="diff-btn vuxen"         id="btn-vuxen" data-diff="vuxen">🔥 Vuxen</button>
+      </div>
+
+      <div id="name-section">
+        <input id="name-input" type="text" maxlength="14" placeholder="Ditt namn…"
+               autocomplete="off" autocorrect="off" spellcheck="false">
+        <button id="play-btn">Spela! ✨</button>
+      </div>
+    </div>
+
+    <!-- Toplist -->
+    <div id="ov-toplist">
+      <h3>🏆 Topplista</h3>
+      <div id="tl-tabs">
+        <div class="tl-tab active" data-d="barn">🐣 Barn</div>
+        <div class="tl-tab"        data-d="vuxen">🔥 Vuxen</div>
+        <div class="tl-tab"        data-d="global">🌐 Global</div>
+      </div>
+      <div id="tl-global-status"></div>
+      <table id="tl-table">
+        <thead><tr><th>#</th><th>Namn</th><th>Poäng</th><th>🔥</th></tr></thead>
+        <tbody id="tl-body"></tbody>
+      </table>
+    </div>
+  </div><!-- overlay -->
+
+</div><!-- game-wrap -->
+</div><!-- outer-shell -->
+
+<script>
+"use strict";
+// ══════════════════════════════════════
+//  DIFFICULTY CONFIG
+// ══════════════════════════════════════
+const DIFF = {
+  barn: {
+    label:       "Barn",
+    maxMisses:   5,
+    baseSpeed:   1.2,
+    speedInc:    0.015,  // slow build — takes much longer to reach max
+    maxSpeed:    7.0,    // higher ceiling
+    speedReset:  1.2,
+    spawnBase:   1400,
+    spawnMin:    800,
+    spawnLevel:  12,
+    multiThresh: [0, 8, 15, 25, 35, 50],
+    roundSize:   8,      // base; grows dynamically with level
+    perfBonus:   3,      // base; grows dynamically with level
+    catchRadius: 95,
+  },
+  vuxen: {
+    label:       "Vuxen",
+    maxMisses:   3,      // lives only lost from catching 💔
+    baseSpeed:   2.5,
+    speedInc:    0.22,
+    maxSpeed:    16.0,   // higher ceiling
+    speedReset:  2.5,
+    spawnBase:   1000,
+    spawnMin:    360,
+    spawnLevel:  14,
+    multiThresh: [0, 5, 10, 15, 20, 25],
+    roundSize:   10,     // base; grows dynamically with level
+    perfBonus:   5,      // base; grows dynamically with level
+    catchRadius: 58,
+    missPenalty: 2,      // points lost per missed star (instead of life)
+  },
+};
+
+// ══════════════════════════════════════
+//  SPRITE TYPES
+// ══════════════════════════════════════
+const STAR_TYPES = [
+  { emoji: "⭐", pts: 1, size: 38, bad: false },
+  { emoji: "🌠", pts: 2, size: 36, bad: false },
+  { emoji: "💫", pts: 3, size: 40, bad: false },
+  { emoji: "🌟", pts: 5, size: 42, bad: false },
+  { emoji: "✨", pts: 8, size: 38, bad: false },
+];
+const STAR_WEIGHTS = [40, 25, 18, 12, 5];
+
+// Catching a bad sprite costs points + breaks streak. Avoiding is neutral.
+const BAD_TYPES = [
+  { emoji: "💀", pts: -3, size: 36, bad: true, label: "💀=-3p" },
+  { emoji: "🌑", pts: -5, size: 38, bad: true, label: "🌑=-5p" },
+];
+
+// Life sprites: 💚/☯️ give life, 💔 costs a life
+const LIFE_TYPES = [
+  { emoji: "💔", size: 34, givesLife: false, life: true },
+  { emoji: "💚", size: 34, givesLife: true,  life: true },
+  { emoji: "☯️",  size: 34, givesLife: true,  life: true },
+];
+
+const POWERUP_TYPES = [
+  { id: "magnet",  emoji: "🧲", label: "Magnet!",   dur: 6000, color: "#67e8f9" },
+  { id: "slowmo",  emoji: "⏱️",  label: "Slow-mo!",  dur: 5000, color: "#c4b5fd" },
+  { id: "rainbow", emoji: "🌈", label: "Regnbåge!", dur: 7000, color: "#ff9de2" },
+];
+
+// ══════════════════════════════════════
+//  LEVEL THEMES
+// ══════════════════════════════════════
+const LEVEL_THEMES = [
+  { bg: "linear-gradient(180deg,#0d1b6e 0%,#3a0e8f 30%,#7c1fa8 60%,#d45fbd 85%,#ffd6f0 100%)", name: "🌙 Natt"        },
+  { bg: "linear-gradient(180deg,#1a0550 0%,#6d1b7b 25%,#c2185b 60%,#ff7043 85%,#ffe0b2 100%)", name: "🌅 Gryning"     },
+  { bg: "linear-gradient(180deg,#0277bd 0%,#0288d1 30%,#29b6f6 60%,#81d4fa 85%,#e1f5fe 100%)", name: "☀️ Dag"         },
+  { bg: "linear-gradient(180deg,#311b92 0%,#7b1fa2 20%,#e65100 55%,#ff8f00 80%,#ffcc02 100%)", name: "🌇 Solnedgång"  },
+  { bg: "linear-gradient(180deg,#000000 0%,#0d0221 30%,#1a0550 60%,#2d1b69 85%,#3d1c8f 100%)", name: "🚀 Rymden"      },
+];
+
+// ══════════════════════════════════════
+//  CHALLENGES
+// ══════════════════════════════════════
+const CHALLENGES = [
+  { id: "rainbow", label: "🌈 Regnbågsläge!", music: "normal" },
+  { id: "giant",   label: "⭐ Jättestjärnor!", sizeBoost: 20, music: "golden" },
+  { id: "double",  label: "💫 Dubbla stjärnor!", doubleSpawn: true, music: "challenge" },
+  { id: "golden",  label: "✨ Guldrusning!", forceType: 4, music: "golden" },
+  { id: "party",   label: "🎉 Festläge!", partyMode: true, music: "challenge" },
+];
+
+// ══════════════════════════════════════
+//  VISUAL CONSTANTS
+// ══════════════════════════════════════
+const CATCH_POPS  = ["🎉","🌈","💖","🦋","🍭","🎀","🎊","🌸","🍀","🌺"];
+const COLORS      = ["#ffe066","#ff9de2","#a78bfa","#67e8f9","#86efac","#fda4af","#fcd34d","#f9a8d4","#c4b5fd","#6ee7b7"];
+const MULTI_COLORS= ["","#c4b5fd","#ff9de2","#ffe066","#67e8f9","#ff80ff","#ffd700"];
+const RING_CLASSES= ["","c1","c2","c3","c4","c5","c5"];
+const STREAK_WORDS= ["Bra! 🌟","Häftigt! 💫","Flyger! 🦋","I eld! 🔥","Magiskt! ✨","GALET! 🤯"];
+
+// ══════════════════════════════════════
+//  SPAWN RATES
+// ══════════════════════════════════════
+const POWERUP_SPAWN_CHANCE = 0.05;
+function lifeChance()      { return 0.04; }
+function badChance(level)  { return Math.min(0.10 + level * 0.02, 0.28); }
+
+// ══════════════════════════════════════
+//  SEEDED RNG
+// ══════════════════════════════════════
+let rngSeed = 42;
+function resetRng()  { rngSeed = 42; }
+function seededRng() {
+  rngSeed = (rngSeed * 1664525 + 1013904223) & 0xffffffff;
+  return (rngSeed >>> 0) / 0xffffffff;
+}
+function pickStarType() {
+  const r = seededRng() * 100;
+  let cum = 0;
+  for (let i = 0; i < STAR_WEIGHTS.length; i++) {
+    cum += STAR_WEIGHTS[i];
+    if (r < cum) return STAR_TYPES[i];
+  }
+  return STAR_TYPES[0];
+}
+
+// ══════════════════════════════════════
+//  THEME HELPER
+// ══════════════════════════════════════
+function getTheme(lvl) {
+  if (lvl <= 2) return LEVEL_THEMES[0];
+  if (lvl <= 4) return LEVEL_THEMES[1];
+  if (lvl <= 6) return LEVEL_THEMES[2];
+  if (lvl <= 8) return LEVEL_THEMES[3];
+  return LEVEL_THEMES[4];
+}
+
+</script>
+<script>
+"use strict";
+// ══════════════════════════════════════
+//  AUDIO ENGINE
+// ══════════════════════════════════════
+const AC = window.AudioContext || window.webkitAudioContext;
+let ac = null;
+
+function unlockAudio() {
+  if (!ac) ac = new AC();
+  if (ac.state === "suspended") ac.resume();
+  try {
+    const b = ac.createBuffer(1, 1, 22050);
+    const s = ac.createBufferSource();
+    s.buffer = b; s.connect(ac.destination); s.start(0);
+  } catch (e) {}
+}
+
+function tone(freq, type, dur, vol, delay = 0) {
+  if (!ac) return;
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.connect(g); g.connect(ac.destination);
+  o.type = type;
+  const t0 = ac.currentTime + Math.max(0, delay);
+  o.frequency.setValueAtTime(freq, t0);
+  g.gain.setValueAtTime(0, t0);
+  g.gain.linearRampToValueAtTime(vol, t0 + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + Math.max(dur, 0.05));
+  o.start(t0); o.stop(t0 + Math.max(dur, 0.05) + 0.06);
+}
+
+function playCatch(p = 1) {
+  [523, 659, 784, 1047].forEach((f, i) => tone(f * p, "sine", 0.12, 0.10, i * 0.045));
+}
+function playStreak5() {
+  [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => tone(f, "sine", 0.18, 0.10, i * 0.06));
+}
+function playWow() {
+  [[523, 659, 784], [659, 830, 988]].forEach(([a, b], i) => {
+    tone(a, "sine", 0.4, 0.08, i * 0.08);
+    tone(b, "sine", 0.4, 0.06, i * 0.08);
+  });
+  [1047, 1319, 1568, 2093].forEach((f, i) => tone(f, "sine", 0.22, 0.05, 0.22 + i * 0.05));
+}
+function playPerfect() {
+  [523, 659, 784, 1047, 1319, 1568, 2093].forEach((f, i) => tone(f, "sine", 0.26, 0.09, i * 0.06));
+  setTimeout(() => {
+    [2093, 2637].forEach((f, i) => tone(f, "sine", 0.28, 0.04, i * 0.07));
+  }, 450);
+}
+function playMultiUp(m) {
+  const p = [1, 1.19, 1.335, 1.587, 2][Math.min(m - 2, 4)];
+  [523, 659, 784, 1047, 1568].forEach((f, i) => tone(f * p, "sine", 0.18, 0.08, i * 0.05));
+}
+function playLevelUp() {
+  [523, 587, 659, 698, 784, 880, 988, 1047].forEach((f, i) => tone(f, "sine", 0.16, 0.09, i * 0.048));
+}
+function playMiss() {
+  tone(200, "sine", 0.28, 0.07);
+  tone(160, "sine", 0.22, 0.05, 0.06);
+}
+function playBadCatch(losesLife) {
+  if (losesLife) {
+    [300, 250, 200, 150].forEach((f, i) => tone(f, "sine", 0.3, 0.10, i * 0.08));
+  } else {
+    tone(280, "sine", 0.2, 0.08);
+    tone(220, "sine", 0.15, 0.06, 0.07);
+  }
+}
+function playGameOver() {
+  [400, 340, 280, 230, 180].forEach((f, i) => tone(f, "sine", 0.32, 0.09, i * 0.12));
+}
+
+// ── Background music ──────────────────────────────────────────────────────────
+const TUNES = {
+  birthday: { bpm: 120, notes: [[392,0.75],[392,0.25],[440,1],[392,1],[523,1],[494,2],[392,0.75],[392,0.25],[440,1],[392,1],[587,1],[523,2],[392,0.75],[392,0.25],[784,1],[659,1],[523,1],[494,1],[440,2],[698,0.75],[698,0.25],[659,1],[523,1],[587,1],[523,2]] },
+  normal:   { bpm: 108, notes: [[659,0.5],[659,0.5],[659,1],[659,0.5],[659,0.5],[659,1],[659,0.5],[784,0.5],[523,0.5],[587,0.5],[659,2],[698,0.5],[698,0.75],[698,0.25],[698,0.5],[659,0.25],[659,0.5],[659,0.5],[587,0.5],[587,0.5],[659,0.5],[587,1],[784,1]] },
+  challenge:{ bpm: 136, notes: [[784,0.5],[880,0.5],[988,0.5],[1047,0.5],[988,0.5],[880,0.5],[784,1],[698,0.5],[784,0.5],[880,0.5],[988,0.5],[1047,1],[988,0.5],[880,0.5],[784,0.5],[659,0.5],[698,0.5],[784,0.5],[880,1],[784,2]] },
+  golden:   { bpm:  88, notes: [[523,1],[659,1],[784,1],[1047,2],[880,1],[784,1],[698,1],[659,2],[587,0.5],[659,0.5],[698,1],[784,1],[880,2],[1047,1],[784,3]] },
+};
+
+let musicTimeout = null;
+
+function stopMusic() {
+  clearTimeout(musicTimeout);
+  musicTimeout = null;
+}
+
+function playTune(name, loop = true) {
+  if (!ac) return;
+  stopMusic();
+  const tune = TUNES[name] || TUNES.normal;
+  const beat = 60 / tune.bpm;
+  let t = ac.currentTime + 0.1;
+  tune.notes.forEach(([f, b]) => {
+    tone(f, "sine", b * beat * 0.7, 0.040, t - ac.currentTime);
+    t += b * beat;
+  });
+  if (loop) {
+    const ms = tune.notes.reduce((s, [, b]) => s + b, 0) * (60000 / tune.bpm);
+    musicTimeout = setTimeout(() => playTune(name, true), ms + 150);
+  }
+}
+
+</script>
+<script>
+"use strict";
+// ══════════════════════════════════════
+//  VISUAL EFFECTS
+//  Depends on: config.js (COLORS, CATCH_POPS)
+//  Uses global: wrap (set by game.js), _cW / _cH
+// ══════════════════════════════════════
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function rndCol() { return COLORS[Math.floor(Math.random() * COLORS.length)]; }
+
+function _tempEl(cls, css, parent, ttl) {
+  const el = document.createElement("div");
+  el.className = cls;
+  el.style.cssText = css;
+  parent.appendChild(el);
+  setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, ttl);
+  return el;
+}
+
+// ── Screen flash ──────────────────────────────────────────────────────────────
+function flashWrap(col) {
+  wrap.style.boxShadow = "inset 0 0 0 4px " + col;
+  setTimeout(() => wrap.style.boxShadow = "", 220);
+}
+
+// ── Particle burst ────────────────────────────────────────────────────────────
+function burst(x, y, count = 6) {
+  for (let i = 0; i < count; i++) {
+    const ang = (i / count) * Math.PI * 2;
+    const d   = 32 + Math.random() * 24;
+    const sz  = 5  + Math.random() * 6;
+    const dur = 0.35 + Math.random() * 0.2;
+    _tempEl(
+      "particle",
+      `width:${sz}px;height:${sz}px;background:${rndCol()};left:${x}px;top:${y}px;` +
+      `--tx:${Math.cos(ang) * d}px;--ty:${Math.sin(ang) * d}px;--dur:${dur}s`,
+      wrap,
+      dur * 1000 + 50
+    );
+  }
+}
+
+// ── Firework ──────────────────────────────────────────────────────────────────
+function firework(x, y) {
+  const fw  = document.createElement("div");
+  fw.className = "firework";
+  fw.style.cssText = `left:${x}px;top:${y}px`;
+  const col = rndCol();
+  for (let i = 0; i < 8; i++) {
+    const ang = (i / 8) * Math.PI * 2;
+    const d   = 40 + Math.random() * 45;
+    const dur = 0.45 + Math.random() * 0.35;
+    const sp  = document.createElement("div");
+    sp.className = "fw-spark";
+    sp.style.cssText =
+      `background:${col};--x:${Math.cos(ang) * d}px;--y:${Math.sin(ang) * d}px;--d:${dur}s`;
+    fw.appendChild(sp);
+  }
+  wrap.appendChild(fw);
+  setTimeout(() => fw.remove(), 900);
+}
+
+function perfectFireworks() {
+  for (let i = 0; i < 2; i++) {
+    setTimeout(
+      () => firework(_cW * 0.2 + Math.random() * _cW * 0.6, _cH * 0.15 + Math.random() * _cH * 0.35),
+      i * 280
+    );
+  }
+}
+
+// ── Score pop ─────────────────────────────────────────────────────────────────
+function scorePop(x, y, pts, m) {
+  const col = m >= 4 ? "#ff80ff" : m >= 3 ? "#ffe066" : m >= 2 ? "#ff9de2" : "#fff";
+  const sz  = m >= 3 ? 20 : m >= 2 ? 16 : 13;
+  const el  = _tempEl(
+    "score-pop",
+    `left:${x}px;top:${y}px;font-size:${sz}px;color:${col};text-shadow:0 0 6px ${col};`,
+    wrap, 880
+  );
+  el.textContent = m > 1 ? `+${pts} ×${m}` : `+${pts}`;
+}
+
+// ── Catch pop (emoji burst) ───────────────────────────────────────────────────
+function catchPop(x, y) {
+  const el = _tempEl("catch-pop", `left:${x}px;top:${y}px`, wrap, 680);
+  el.textContent = CATCH_POPS[Math.floor(Math.random() * CATCH_POPS.length)];
+}
+
+// ── Miss pop ──────────────────────────────────────────────────────────────────
+function missPop(x, y) {
+  const el = _tempEl("miss-flash", `left:${x}px;top:${y}px`, wrap, 720);
+  el.textContent = "💨";
+}
+
+// ── Streak word ───────────────────────────────────────────────────────────────
+function streakWord(txt, x, y) {
+  const el = _tempEl(
+    "catch-pop",
+    `left:${x}px;top:${y}px;font-size:14px;color:#ffe066;font-family:"Fredoka One",cursive;`,
+    wrap, 700
+  );
+  el.textContent = txt;
+}
+
+// ── Unicorn trail ─────────────────────────────────────────────────────────────
+function addTrail(x, y) {
+  const sz = 12 + Math.random() * 10;
+  _tempEl(
+    "trail",
+    `width:${sz}px;height:${sz}px;background:${rndCol()};left:${x - sz / 2}px;top:${y - sz / 2}px`,
+    wrap, 400
+  );
+}
+
+// ── Banners & Toasts ──────────────────────────────────────────────────────────
+let _bannerTimer = null;
+function showBanner(txt, cls = "normal", dur = 2000) {
+  clearTimeout(_bannerTimer);
+  eventBanner.textContent = txt;
+  eventBanner.className = cls + " show";
+  _bannerTimer = setTimeout(() => eventBanner.classList.remove("show"), dur);
+}
+
+let _flashTimer = null;
+function flashCentre(txt, dur = 1400) {
+  clearTimeout(_flashTimer);
+  centreFlash.textContent = txt;
+  centreFlash.style.opacity = "1";
+  _flashTimer = setTimeout(() => centreFlash.style.opacity = "0", dur);
+}
+
+let _perfectToastTimer = null;
+function showPerfectToast(txt, dur = 2800) {
+  clearTimeout(_perfectToastTimer);
+  perfectToast.textContent = txt;
+  perfectToast.style.opacity = "1";
+  _perfectToastTimer = setTimeout(() => perfectToast.style.opacity = "0", dur);
+}
+
+let _levelToastTimer = null;
+function showLevelToast(txt, dur = 2200) {
+  clearTimeout(_levelToastTimer);
+  const el = document.getElementById("level-toast");
+  el.textContent = txt;
+  el.style.opacity = "1";
+  _levelToastTimer = setTimeout(() => el.style.opacity = "0", dur);
+}
+
+// ── Combo flash ───────────────────────────────────────────────────────────────
+let _comboFlashTimer = null;
+function showComboFlash(m) {
+  clearTimeout(_comboFlashTimer);
+  const col = MULTI_COLORS[Math.min(m, MULTI_COLORS.length - 1)] || "#ffe066";
+  comboFlash.style.cssText = `color:${col};text-shadow:0 0 20px ${col};opacity:1;`;
+  comboFlash.textContent = "×" + m + "!";
+  _comboFlashTimer = setTimeout(() => comboFlash.style.opacity = "0", 1000);
+}
+
+// ── Combo ring ────────────────────────────────────────────────────────────────
+function updateComboRing(m) {
+  comboRing.className = "";
+  if (difficulty === "vuxen") comboRing.classList.add("vuxen");
+  if (m > 1) comboRing.classList.add(RING_CLASSES[Math.min(m, RING_CLASSES.length - 1)]);
+}
+
+// ── Speed bar ─────────────────────────────────────────────────────────────────
+const SPD_COL_LO  = "linear-gradient(90deg,#a78bfa,#c4b5fd)";
+const SPD_COL_MID = "linear-gradient(90deg,#a78bfa,#ff80ff)";
+const SPD_COL_HI  = "linear-gradient(90deg,#ff80ff,#ff4444)";
+let _lastSpeedPct = -1, _lastSpeedCol = "";
+function updateSpeedBar() {
+  const pct = Math.min((currentSpeed - cfg.baseSpeed) / (cfg.maxSpeed - cfg.baseSpeed) * 100, 100);
+  const col = pct > 75 ? SPD_COL_HI : pct > 45 ? SPD_COL_MID : SPD_COL_LO;
+  const p   = Math.round(pct);
+  if (p   !== _lastSpeedPct) { speedFill.style.width = p + "%"; _lastSpeedPct = p; }
+  if (col !== _lastSpeedCol) { speedFill.style.background = col; _lastSpeedCol = col; }
+}
+
+// ── Round bar ─────────────────────────────────────────────────────────────────
+let _lastRoundPct = -1, _lastRoundClass = "", _lastRoundLL = "", _lastRoundLR = "";
+function updateRoundBar() {
+  const rs    = typeof getRoundSize === "function" ? getRoundSize() : cfg.roundSize;
+  const total = roundCaught + roundMissed;
+  const pct   = Math.round(Math.min(total / rs * 100, 100));
+  const cls   = roundMissed === 0 ? "clean" : "dirty";
+  const ll    = "Omgång " + roundNum + (roundMissed === 0 ? " 💚" : " 💔");
+  const lr    = total + "/" + rs + " 🎯";
+  if (pct !== _lastRoundPct)   { roundFill.style.width = pct + "%"; _lastRoundPct = pct; }
+  if (cls !== _lastRoundClass) { roundFill.className = cls;          _lastRoundClass = cls; }
+  if (ll  !== _lastRoundLL)    { roundLabelL.textContent = ll;       _lastRoundLL = ll; }
+  if (lr  !== _lastRoundLR)    { roundLabelR.textContent = lr;       _lastRoundLR = lr; }
+}
+
+// ── Hearts ────────────────────────────────────────────────────────────────────
+function buildHearts() {
+  heartsEl.innerHTML = "";
+  for (let i = 0; i < cfg.maxMisses; i++) {
+    const h = document.createElement("span");
+    h.className = "heart"; h.textContent = "❤️";
+    heartsEl.appendChild(h);
+  }
+}
+function updateHearts() {
+  [...heartsEl.querySelectorAll(".heart")].forEach((h, i) =>
+    h.classList.toggle("lost", i >= cfg.maxMisses - misses)
+  );
+}
+
+// ── BG decor ──────────────────────────────────────────────────────────────────
+function makeBgStars() {
+  for (let i = 0; i < 28; i++) {
+    const s = document.createElement("div");
+    s.className = "bg-star";
+    const sz = 1 + Math.random() * 3;
+    s.style.cssText =
+      `width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*65}%;` +
+      `--d:${2+Math.random()*4}s;animation-delay:${Math.random()*4}s`;
+    wrap.appendChild(s);
+  }
+}
+
+let cloudEls = [];
+function makeClouds() {
+  if (cloudEls.length > 0) return;
+  for (let i = 0; i < 4; i++) {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    const w = 120 + Math.random() * 160, h = 50 + Math.random() * 30;
+    svg.setAttribute("width", w); svg.setAttribute("height", h);
+    svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+    svg.style.cssText = "position:absolute;pointer-events:none;";
+    [[w*.5,h*.65,w*.46,h*.36],[w*.28,h*.75,w*.28,h*.26],[w*.72,h*.75,w*.28,h*.23]].forEach(([cx,cy,rx,ry]) => {
+      const e = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+      e.setAttribute("cx", cx); e.setAttribute("cy", cy);
+      e.setAttribute("rx", rx); e.setAttribute("ry", ry);
+      e.setAttribute("fill", `rgba(255,255,255,${0.10+Math.random()*0.13})`);
+      svg.appendChild(e);
+    });
+    wrap.insertBefore(svg, unicornEl);
+    const x = Math.random() * (_cW || wrap.clientWidth);
+    const y = 30 + Math.random() * ((_cH || wrap.clientHeight) * 0.42);
+    svg.style.left = x + "px"; svg.style.top = y + "px";
+    cloudEls.push({ el: svg, x, y, speed: 0.12 + Math.random() * 0.18 });
+  }
+}
+
+// ── Level theme ───────────────────────────────────────────────────────────────
+let currentThemeIdx = -1;
+function applyTheme(lvl) {
+  const theme = getTheme(lvl);
+  const idx   = LEVEL_THEMES.indexOf(theme);
+  if (idx === currentThemeIdx) return;
+  currentThemeIdx = idx;
+  wrap.style.background = theme.bg;
+  if (lvl > 1) showBanner(theme.name + " — Nivå " + lvl, "normal", 2000);
+}
+function resetTheme() { currentThemeIdx = -1; }
+
+// ── Power-up bar ──────────────────────────────────────────────────────────────
+function renderPowerupBar(activePowerups) {
+  // Managed externally via DOM elements stored in activePowerups entries
+}
+
+</script>
+<script>
+"use strict";
+// ══════════════════════════════════════
+//  BACKEND API
+//  Talks to the Express server at /api/scores.
+//  Falls back gracefully when the backend is unavailable.
+// ══════════════════════════════════════
+
+const API_BASE = "/api";
+
+/**
+ * Submit a completed game score to the global backend.
+ * Returns { rank, list } on success, or null on failure.
+ */
+async function submitScore({ name, score, difficulty, maxStreak, maxMulti, perfectRounds, caught }) {
+  try {
+    const res = await fetch(`${API_BASE}/scores`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ name, score, difficulty, maxStreak, maxMulti, perfectRounds, caught }),
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Fetch the global top-10 for a difficulty.
+ * Returns an array of score objects, or null on failure.
+ */
+async function fetchGlobalScores(difficulty) {
+  try {
+    const res = await fetch(`${API_BASE}/scores/${difficulty}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.list || null;
+  } catch {
+    return null;
+  }
+}
+
+</script>
+<script>
+"use strict";
+// ══════════════════════════════════════
+//  DOM REFS  (must match index.html IDs)
+// ══════════════════════════════════════
+const wrap        = document.getElementById("game-wrap");
+const unicornEl   = document.getElementById("unicorn");
+const comboRing   = document.getElementById("combo-ring");
+const comboFlash  = document.getElementById("combo-flash");
+const scoreEl     = document.getElementById("score-val");
+const levelEl     = document.getElementById("level-val");
+const streakEl    = document.getElementById("streak-val");
+const multiEl     = document.getElementById("multi-val");
+const heartsEl    = document.getElementById("hearts-display");
+const speedFill   = document.getElementById("speed-fill");
+const roundFill   = document.getElementById("round-fill");
+const roundLabelL = document.getElementById("round-label-left");
+const roundLabelR = document.getElementById("round-label-right");
+const eventBanner = document.getElementById("event-banner");
+const centreFlash = document.getElementById("centre-flash");
+const perfectToast= document.getElementById("perfect-toast");
+const overlay     = document.getElementById("overlay");
+const playBtn     = document.getElementById("play-btn");
+const nameInput   = document.getElementById("name-input");
+const joyZone     = document.getElementById("joystick-zone");
+const joyKnob     = document.getElementById("joy-knob");
+const joyTrack    = document.getElementById("joy-track");
+const quitBtn     = document.getElementById("quit-btn");
+
+// ══════════════════════════════════════
+//  GAME STATE
+// ══════════════════════════════════════
+let score=0, level=1, playing=false;
+let ux=0, uy=0, streak=0, maxStreak=0;
+let multiplier=1, maxMulti=1;
+let misses=0, totalCaught=0, perfectRounds=0;
+let roundCaught=0, roundMissed=0, roundNum=1;
+let currentSpeed=DIFF.barn.baseSpeed;
+let stars=[], spawnTimer=null, rafId=null, trailTimer=0;
+let lastTime=0, playerName="Ellie";
+let difficulty="barn", cfg=DIFF.barn;
+let activeChallenge=null, nextChallengeAt=30, challengeEndTimer=null;
+let activePowerups={};
+let _cW=0, _cH=0;
+let globalScoreCache={barn:null, vuxen:null};
+let tlShowDiff="barn";
+let bonusTimer=null;
+
+// Rainbow trail
+const RAINBOW_TRAIL_LEN = 22;
+const RAINBOW_HUE = ["#ff4444","#ff8800","#ffee00","#44dd44","#44aaff","#aa44ff","#ff44cc"];
+let rainbowPositions = []; // {x,y} ring buffer
+let rainbowDots = [];      // pre-created DOM elements (reused each frame)
+
+const keys={};
+let joyTouchId=null, joyTargetX=null;
+
+const UNICORN_SPEED=7, FIXED_Y_FRAC=0.70;
+
+// ══════════════════════════════════════
+//  TOPLIST (localStorage, per difficulty)
+// ══════════════════════════════════════
+function tlKey(d){ return "unicorn_top_"+d; }
+function loadTop(d=difficulty){
+  try{ return JSON.parse(localStorage.getItem(tlKey(d))||"[]"); }catch{ return []; }
+}
+function saveTop(l,d=difficulty){
+  try{ localStorage.setItem(tlKey(d),JSON.stringify(l)); }catch{}
+}
+function addToTop(name,sc,ms,mx,pf,caught,d=difficulty){
+  const l=loadTop(d);
+  l.push({name,score:sc,maxStreak:ms,maxMulti:mx,perfect:pf,caught});
+  l.sort((a,b)=>b.score-a.score);
+  const t=l.slice(0,10); saveTop(t,d); return t;
+}
+
+const MEDALS=["🥇","🥈","🥉","4","5","6","7","8","9","10"];
+function renderTop(d, highlightName="", globalList=undefined){
+  tlShowDiff=d;
+  document.querySelectorAll(".tl-tab").forEach(t=>t.classList.toggle("active",t.dataset.d===d));
+  const status=document.getElementById("tl-global-status");
+  const body=document.getElementById("tl-body");
+  let list;
+  if(d==="global"){
+    if(globalList===undefined){
+      if(globalScoreCache.barn){
+        list=globalScoreCache[difficulty]||globalScoreCache.barn||[];
+        status.textContent="";
+      } else {
+        body.innerHTML=`<tr><td colspan="4" class="tl-empty">Laddar…</td></tr>`;
+        status.textContent="";
+        fetchGlobalScores(difficulty).then(r=>{
+          if(r){ globalScoreCache[difficulty]=r; if(tlShowDiff==="global") renderTop("global","",r); }
+          else { body.innerHTML=`<tr><td colspan="4" class="tl-empty">Ej tillgänglig</td></tr>`; }
+        });
+        return;
+      }
+    } else {
+      list=globalList||[];
+      status.textContent=list.length?"":"Ej tillgänglig";
+    }
+  } else {
+    list=loadTop(d);
+    status.textContent="";
+  }
+  if(!list.length){
+    body.innerHTML=`<tr><td colspan="4" class="tl-empty">Inga poäng än!</td></tr>`;
+    return;
+  }
+  body.innerHTML=list.map((e,i)=>`
+    <tr class="${e.name===highlightName&&(d==="global"||d===difficulty)?'me':''}">
+      <td>${MEDALS[i]||i+1}</td>
+      <td>${e.name||"Anonym"}</td>
+      <td>${e.score}</td>
+      <td>${e.maxStreak||0}</td>
+    </tr>`).join("");
+}
+// ══════════════════════════════════════
+//  POWER-UPS
+// ══════════════════════════════════════
+function _setPowerupClass(){
+  unicornEl.classList.toggle("has-magnet",  !!activePowerups.magnet);
+  unicornEl.classList.toggle("has-slowmo",  !!activePowerups.slowmo);
+  unicornEl.classList.toggle("has-rainbow", !!activePowerups.rainbow);
+}
+function activatePowerup(type){
+  if(activePowerups[type.id]) clearTimeout(activePowerups[type.id].timer);
+  const pu=document.getElementById("powerup-bar");
+  const old=document.getElementById("pu-el-"+type.id);
+  if(old) old.remove();
+  const puEl=document.createElement("div");
+  puEl.className="pu-active"; puEl.id="pu-el-"+type.id;
+  puEl.innerHTML=`${type.emoji} ${type.label} <span class="pu-timer" id="pu-t-${type.id}"></span>`;
+  pu.appendChild(puEl);
+  let remaining=Math.ceil(type.dur/1000);
+  const timerEl=()=>document.getElementById("pu-t-"+type.id);
+  if(timerEl()) timerEl().textContent=remaining+"s";
+  const tick=setInterval(()=>{
+    remaining--;
+    const t=timerEl(); if(t) t.textContent=remaining+"s";
+  },1000);
+  const endTimer=setTimeout(()=>{
+    clearInterval(tick); puEl.remove(); delete activePowerups[type.id];
+    if(type.id==="rainbow"){ rainbowPositions=[]; hideRainbowDots(); }
+    _setPowerupClass();
+  },type.dur);
+  activePowerups[type.id]={timer:endTimer,tick,el:puEl};
+  _setPowerupClass();
+  showBanner(type.emoji+" "+type.label,"powerup",2000);
+  playMultiUp(2);
+}
+function clearAllPowerups(){
+  Object.values(activePowerups).forEach(p=>{
+    clearTimeout(p.timer); clearInterval(p.tick); if(p.el&&p.el.parentNode) p.el.remove();
+  });
+  activePowerups={};
+  rainbowPositions=[]; hideRainbowDots();
+  _setPowerupClass();
+  const pb=document.getElementById("powerup-bar");
+  if(pb) pb.innerHTML="";
+}
+function applyMagnet(s){
+  if(!activePowerups.magnet||s.kind!=="good") return; // only attract good sprites
+  const dx=ux-s.x, dy=uy-s.y, dist=Math.sqrt(dx*dx+dy*dy);
+  if(dist<180&&dist>1){ s.x+=dx/dist*3; s.y+=dy/dist*3; s.el.style.left=s.x+"px"; }
+}
+
+// ── Rainbow trail ─────────────────────────────────────────────────────────────
+function initRainbowDots(){
+  for(let i=0;i<RAINBOW_TRAIL_LEN;i++){
+    const d=document.createElement("div");
+    d.className="rainbow-dot"; d.style.display="none";
+    wrap.appendChild(d); rainbowDots.push(d);
+  }
+}
+function hideRainbowDots(){ rainbowDots.forEach(d=>d.style.display="none"); }
+function updateRainbowTrail(){
+  if(!activePowerups.rainbow){ hideRainbowDots(); rainbowPositions=[]; return; }
+  rainbowPositions.push({x:ux,y:uy});
+  if(rainbowPositions.length>RAINBOW_TRAIL_LEN) rainbowPositions.shift();
+  const len=rainbowPositions.length;
+  rainbowDots.forEach((d,i)=>{
+    const pos=rainbowPositions[len-1-i];
+    if(!pos){ d.style.display="none"; return; }
+    const frac=1-(i/RAINBOW_TRAIL_LEN);
+    const sz=Math.round(8+frac*30);
+    const col=RAINBOW_HUE[i%RAINBOW_HUE.length];
+    d.style.cssText=`display:block;width:${sz}px;height:${sz}px;background:${col};`+
+      `opacity:${(frac*0.75).toFixed(2)};left:${pos.x-sz/2}px;top:${pos.y-sz/2}px;`+
+      `filter:blur(${Math.round((1-frac)*3)}px);`;
+  });
+}
+function rainbowCatches(s){
+  if(!activePowerups.rainbow||!rainbowPositions.length) return false;
+  const r2=40*40;
+  for(const p of rainbowPositions){
+    const dx=s.x-p.x,dy=s.y-p.y;
+    if(dx*dx+dy*dy<r2) return true;
+  }
+  return false;
+}
+
+// ══════════════════════════════════════
+//  DYNAMIC ROUND SIZE (grows with level)
+// ══════════════════════════════════════
+function getRoundSize(){ return Math.min(cfg.roundSize+Math.floor((level-1)*1.5),25); }
+function getRoundBonus(){ return cfg.perfBonus+Math.floor((level-1)*0.8); }
+
+// ══════════════════════════════════════
+//  LIVE RANK INDICATOR
+// ══════════════════════════════════════
+function updateRankHud(){
+  const el=document.getElementById("rank-hud"); if(!el) return;
+  const top=loadTop(difficulty);
+  if(!top.length){ el.textContent=""; return; }
+  const rank=top.findIndex(e=>score>=e.score);
+  if(rank===0)     el.textContent="🥇";
+  else if(rank===1)el.textContent="🥈";
+  else if(rank===2)el.textContent="🥉";
+  else if(rank<0&&score>0) el.textContent="";
+  else             el.textContent="";
+  // Show label if beating or at top score
+  if(score>0&&score>=top[0].score) el.textContent="🥇 Nytt rekord!";
+  else if(rank>=0&&rank<3)         el.textContent=[" 🥇"," 🥈"," 🥉"][rank];
+  else                              el.textContent="";
+}
+
+// ══════════════════════════════════════
+//  MULTIPLIER
+// ══════════════════════════════════════
+function getMultiplier(str){
+  const t=cfg.multiThresh;
+  for(let i=t.length-1;i>=0;i--) if(str>=t[i]) return i+1;
+  return 1;
+}
+
+// ══════════════════════════════════════
+//  SPAWN
+// ══════════════════════════════════════
+function spawnOneStar(xOver){
+  if(!playing) return;
+  let type, kind="good";
+  if(difficulty==="vuxen"){
+    const r=seededRng();
+    const badLifeP =Math.min(0.02+totalCaught*0.0008,0.10);
+    const goodLifeP=Math.max(0.04-totalCaught*0.0003,0.01);
+    const totalLP  =badLifeP+goodLifeP;
+    if(r<totalLP){
+      kind="life";
+      type=seededRng()<badLifeP/totalLP
+        ? LIFE_TYPES[0]
+        : LIFE_TYPES[1+Math.floor(seededRng()*2)];
+    } else if(r<totalLP+badChance(level)){
+      kind="bad"; type=BAD_TYPES[Math.floor(seededRng()*BAD_TYPES.length)];
+    } else {
+      kind="good";
+      type=activeChallenge?.forceType!==undefined?STAR_TYPES[activeChallenge.forceType]:pickStarType();
+    }
+  } else {
+    kind="good";
+    type=activeChallenge?.forceType!==undefined?STAR_TYPES[activeChallenge.forceType]:pickStarType();
+  }
+  const el=document.createElement("div");
+  el.className=kind==="bad"?"fbad":"fstar";
+  el.textContent=type.emoji;
+  const sz=type.size+(kind==="good"?(activeChallenge?.sizeBoost||0):0);
+  el.style.fontSize=sz+"px";
+  const x=xOver!==undefined?xOver:28+Math.random()*((_cW||wrap.clientWidth)-60);
+  el.style.left=x+"px"; el.style.top="-55px";
+  wrap.insertBefore(el,centreFlash);
+  stars.push({el,x:x+sz/2,y:-55,speed:currentSpeed+(Math.random()*0.3-0.15),type,kind});
+}
+function spawnPowerupSprite(){
+  if(Math.random()>POWERUP_SPAWN_CHANCE) return;
+  const type=POWERUP_TYPES[Math.floor(Math.random()*POWERUP_TYPES.length)];
+  if(activePowerups[type.id]) return;
+  const el=document.createElement("div");
+  el.className="fstar";
+  el.textContent=type.emoji;
+  el.style.fontSize="52px";
+  el.style.filter=`drop-shadow(0 0 14px ${type.color}) drop-shadow(0 0 6px #fff)`;
+  const x=28+Math.random()*((_cW||wrap.clientWidth)-60);
+  el.style.left=x+"px"; el.style.top="-60px";
+  wrap.insertBefore(el,centreFlash);
+  stars.push({el,x:x+26,y:-60,speed:currentSpeed*0.7,type,kind:"powerup"});
+}
+function spawnStar(){
+  if(!playing) return;
+  spawnOneStar();
+  if(activeChallenge?.doubleSpawn){
+    setTimeout(()=>spawnOneStar(36+Math.random()*((_cW||wrap.clientWidth)-80)),200);
+  } else if(difficulty==="vuxen"){
+    setTimeout(()=>spawnOneStar(36+Math.random()*((_cW||wrap.clientWidth)-80)),180);
+    if(level>=4) setTimeout(()=>spawnOneStar(36+Math.random()*((_cW||wrap.clientWidth)-80)),360);
+  }
+  spawnPowerupSprite();
+}
+function scheduleSpawn(){
+  clearInterval(spawnTimer);
+  const interval=Math.max(cfg.spawnMin,cfg.spawnBase-level*cfg.spawnLevel);
+  spawnTimer=setInterval(spawnStar,interval);
+}
+// ══════════════════════════════════════
+//  CATCH HANDLERS
+// ══════════════════════════════════════
+function onCatch(starType,x,y){
+  const pts=starType.pts*multiplier;
+  score+=pts; scoreEl.textContent=score;
+  streak++; totalCaught++; roundCaught++;
+  if(streak>maxStreak) maxStreak=streak;
+  streakEl.textContent=streak;
+  currentSpeed=Math.min(currentSpeed+cfg.speedInc,cfg.maxSpeed);
+  updateSpeedBar();
+  const newM=getMultiplier(streak), oldM=multiplier; multiplier=newM;
+  if(newM>maxMulti) maxMulti=newM;
+  multiEl.textContent="×"+newM;
+  updateComboRing(newM);
+  if(newM>oldM){ showComboFlash(newM); playMultiUp(newM); }
+  const nl=1+Math.floor(totalCaught/10);
+  if(nl>level){ level=nl; levelEl.textContent=level; doLevelUp(); }
+  burst(x,y,10);
+  flashWrap("rgba(255,220,0,0.30)");
+  scorePop(x,y-20,pts,newM);
+  catchPop(x,y);
+  updateRankHud();
+  const mt=cfg.multiThresh;
+  if(streak===mt[1]){ playStreak5(); streakWord("×2! 🌟",x,y); }
+  else if(streak===mt[2]){ playWow(); streakWord("×3! 💖",x,y); }
+  else if(streak===mt[3]){ playWow(); streakWord("×4! 🔥",x,y); }
+  else if(streak===mt[4]){ playWow(); streakWord("×5! 🦄",x,y); }
+  else if(streak===mt[5]){ playWow(); streakWord("×6! 👑",x,y); }
+  else if(streak>=3) streakWord(STREAK_WORDS[Math.min(Math.floor((streak-3)/4),STREAK_WORDS.length-1)],x,y);
+  playCatch(1+streak*0.006);
+  updateRoundBar();
+  checkRoundEnd();
+  if(totalCaught>=nextChallengeAt&&!activeChallenge) activateChallenge();
+}
+function onMiss(sx,sy){
+  if(streak>=5) flashCentre("Hoppsan! 😅
+Streak bruten…",900);
+  streak=0; streakEl.textContent=0;
+  multiplier=1; multiEl.textContent="×1";
+  updateComboRing(1);
+  currentSpeed=cfg.speedReset; updateSpeedBar();
+  roundMissed++; totalCaught++;
+  updateRoundBar(); checkRoundEnd();
+  missPop(sx,sy); playMiss();
+
+  if(difficulty==="vuxen"){
+    // Vuxen: miss costs points, not a life
+    const pen=cfg.missPenalty||2;
+    score=Math.max(0,score-pen); scoreEl.textContent=score;
+    const d=document.createElement("div"); d.className="miss-flash";
+    d.textContent="-"+pen+"p";
+    d.style.cssText=`left:${sx}px;top:${sy}px;color:#ff9de2;font-size:13px;`;
+    wrap.appendChild(d); setTimeout(()=>{if(d.parentNode)d.parentNode.removeChild(d);},700);
+  } else {
+    misses++; updateHearts();
+    if(misses>=cfg.maxMisses) endGame();
+  }
+}
+function onBadCatch(type,x,y){
+  streak=0; streakEl.textContent=0;
+  multiplier=1; multiEl.textContent="×1";
+  updateComboRing(1);
+  currentSpeed=cfg.speedReset; updateSpeedBar();
+  playBadCatch(false);
+  score=Math.max(0,score+type.pts); scoreEl.textContent=score;
+  flashWrap("rgba(255,0,0,0.5)");
+  showBanner(type.emoji+" "+type.pts+"p  Streak bruten!","danger",1400);
+  const d=document.createElement("div"); d.className="miss-flash";
+  d.textContent=type.emoji+" "+type.pts+"p";
+  d.style.cssText=`left:${x}px;top:${y}px;color:#ff4444;font-size:18px;`;
+  wrap.appendChild(d); setTimeout(()=>{if(d.parentNode)d.parentNode.removeChild(d);},800);
+}
+function onLifeCatch(type,x,y){
+  if(!type.givesLife){
+    // 💔
+    misses++; updateHearts(); playBadCatch(true);
+    wrap.style.outline="4px solid rgba(255,0,0,0.6)";
+    setTimeout(()=>wrap.style.outline="",250);
+    showBanner("💔 -1 Liv!","danger",1600);
+    flashCentre("💔 MINUS ETT LIV!",1100);
+    const d=document.createElement("div"); d.className="miss-flash";
+    d.textContent="💔 -Liv!"; d.style.cssText=`left:${x}px;top:${y}px;color:#ff4444;font-size:20px;`;
+    wrap.appendChild(d); setTimeout(()=>{if(d.parentNode)d.parentNode.removeChild(d);},800);
+    if(misses>=cfg.maxMisses) endGame();
+  } else {
+    if(misses>0){ misses--; updateHearts(); }
+    playMultiUp(2); showBanner("💚 +1 Liv!","normal",1500);
+    const d=document.createElement("div"); d.className="score-pop";
+    d.textContent="💚 +❤️"; d.style.cssText=`left:${x}px;top:${y}px;font-size:20px;color:#86efac;`;
+    wrap.appendChild(d); setTimeout(()=>{if(d.parentNode)d.parentNode.removeChild(d);},900);
+    burst(x,y,10);
+  }
+}
+
+// ══════════════════════════════════════
+//  ROUND SYSTEM
+// ══════════════════════════════════════
+function checkRoundEnd(){
+  const rs=getRoundSize();
+  if(roundCaught+roundMissed<rs) return;
+  const wasPerfect=roundMissed===0;
+  if(wasPerfect){
+    perfectRounds++;
+    const bonus=getRoundBonus()*multiplier;
+    score+=bonus; scoreEl.textContent=score;
+    playPerfect();
+    showBanner("🌟 PERFEKT omgång "+roundNum+"!  +"+bonus+"p 🎉","perfect",2800);
+    perfectFireworks();
+  } else {
+    showBanner(`Omgång ${roundNum}: ${roundCaught}/${rs} ✅ ${roundMissed} ❌`,"round-end",1800);
+  }
+  roundNum++; roundCaught=0; roundMissed=0;
+  updateRoundBar();
+}
+
+// ══════════════════════════════════════
+//  CHALLENGE
+// ══════════════════════════════════════
+function activateChallenge(){
+  clearTimeout(challengeEndTimer);
+  const c=CHALLENGES[Math.floor(seededRng()*CHALLENGES.length)];
+  activeChallenge=c;
+  showBanner("🎯 UTMANING: "+c.label,"challenge",2800);
+  playWow(); playTune(c.music||"challenge");
+  challengeEndTimer=setTimeout(()=>{ activeChallenge=null; playTune("normal"); },18000);
+  nextChallengeAt=totalCaught+cfg.roundSize*3+Math.floor(seededRng()*10);
+}
+// ══════════════════════════════════════
+//  GAME LOOP
+// ══════════════════════════════════════
+function loop(ts){
+  if(!playing) return;
+  const dt=Math.min(ts-lastTime,50); lastTime=ts;
+  _cW=wrap.clientWidth; _cH=wrap.clientHeight;
+
+  const spd=UNICORN_SPEED*(dt/16);
+  if(joyTouchId!==null&&joyTargetX!==null) ux=joyTargetX;
+  else {
+    if(keys["ArrowLeft"]||keys["a"]) ux=Math.max(36,ux-spd);
+    if(keys["ArrowRight"]||keys["d"]) ux=Math.min(_cW-36,ux+spd);
+  }
+  uy=_cH*FIXED_Y_FRAC;
+  unicornEl.style.left=ux+"px"; unicornEl.style.top=uy+"px";
+  comboRing.style.left=ux+"px"; comboRing.style.top=uy+"px";
+
+  trailTimer+=dt;
+  const moving=joyTouchId!==null||keys["ArrowLeft"]||keys["ArrowRight"]||keys["a"]||keys["d"];
+  if(trailTimer>80&&moving){ addTrail(ux,uy); trailTimer=0; }
+
+  updateRainbowTrail();
+
+  const speedMult=activePowerups.slowmo?0.4:1.0;
+  const cr=cfg.catchRadius+((activeChallenge?.sizeBoost||0)>0?12:0);
+  const cr2=cr*cr;
+
+  for(let i=stars.length-1;i>=0;i--){
+    const s=stars[i];
+    s.y+=s.speed*speedMult*(dt/16);
+    applyMagnet(s);
+    s.el.style.top=s.y+"px";
+    const dx=s.x-ux, dy=s.y-uy;
+    const caught=dx*dx+dy*dy<cr2||rainbowCatches(s);
+    if(caught){
+      s.el.remove(); stars.splice(i,1);
+      if(s.kind==="bad")        onBadCatch(s.type,s.x,s.y);
+      else if(s.kind==="life")  onLifeCatch(s.type,s.x,s.y);
+      else if(s.kind==="powerup"){ activatePowerup(s.type); burst(s.x,s.y,8); }
+      else                      onCatch(s.type,s.x,s.y);
+    } else if(s.y>_cH+50){
+      s.el.remove(); stars.splice(i,1);
+      if(s.kind==="good") onMiss(s.x,_cH-16);
+      // bad / life / powerup that fall off: neutral
+    }
+  }
+
+  cloudEls.forEach(c=>{ c.x+=c.speed*(dt/16); if(c.x>_cW+200) c.x=-200; c.el.style.left=c.x+"px"; });
+  rafId=requestAnimationFrame(loop);
+}
+
+// Joystick
+function updateJoy(clientX){
+  const r=joyTrack.getBoundingClientRect(), knobR=27;
+  const minX=r.left+knobR, maxX=r.right-knobR;
+  const cx=Math.max(minX,Math.min(maxX,clientX));
+  joyKnob.style.left=(cx-r.left)+"px";
+  joyTargetX=36+(cx-minX)/(maxX-minX)*((_cW||wrap.clientWidth)-72);
+}
+joyZone.addEventListener("touchstart",e=>{e.stopPropagation();if(joyTouchId!==null)return;const t=e.changedTouches[0];joyTouchId=t.identifier;updateJoy(t.clientX);},{passive:true});
+joyZone.addEventListener("touchmove", e=>{e.stopPropagation();for(const t of e.changedTouches){if(t.identifier===joyTouchId){updateJoy(t.clientX);break;}}},{passive:true});
+joyZone.addEventListener("touchend",  e=>{e.stopPropagation();for(const t of e.changedTouches){if(t.identifier===joyTouchId){joyTouchId=null;joyTargetX=null;break;}}},{passive:true});
+
+// ══════════════════════════════════════
+//  LEVEL UP
+// ══════════════════════════════════════
+function doLevelUp(){
+  playLevelUp();
+  applyTheme(level);
+  showLevelToast("🌈 Nivå "+level+"! ⚡");
+  scheduleSpawn();
+  setTimeout(()=>playTune("birthday"),160);
+  setTimeout(()=>{ if(playing&&!activeChallenge) playTune("normal"); },13000);
+}
+// ══════════════════════════════════════
+//  END GAME
+// ══════════════════════════════════════
+function endGame(){
+  if(!playing) return;
+  playing=false;
+  cancelAnimationFrame(rafId); rafId=null;
+  clearInterval(spawnTimer); spawnTimer=null;
+  clearTimeout(challengeEndTimer); clearTimeout(bonusTimer);
+  clearAllPowerups(); stopMusic();
+  quitBtn.classList.remove("visible");
+
+  const list=addToTop(playerName,score,maxStreak,maxMulti,perfectRounds,totalCaught,difficulty);
+  const rank=list.findIndex(e=>e.name===playerName&&e.score===score)+1;
+
+  document.getElementById("overlay-title").textContent="Spelet slut! 🎊";
+  document.getElementById("overlay-sub").textContent="Bra jobbat "+playerName+"! ("+cfg.label+")";
+  const rl=document.getElementById("rank-line");
+  rl.textContent=(rank===1?"🥇":rank===2?"🥈":rank===3?"🥉":"#"+rank)+" Plats "+rank+" ("+cfg.label+")!";
+  rl.style.display="block";
+  document.getElementById("stat-score").textContent=score;
+  document.getElementById("stat-caught").textContent=totalCaught;
+  document.getElementById("stat-streak").textContent=maxStreak;
+  document.getElementById("stat-multi").textContent="×"+maxMulti;
+  document.getElementById("stat-perfect").textContent=perfectRounds;
+  document.getElementById("stats-card").style.display="block";
+  document.getElementById("end-medals").style.display="none";
+  nameInput.value=playerName;
+
+  renderTop(difficulty, playerName);
+  document.querySelectorAll(".tl-tab").forEach(t=>t.classList.toggle("active",t.dataset.d===difficulty));
+
+  playGameOver();
+  setTimeout(()=>overlay.classList.remove("hidden"),380);
+
+  // Async: submit to backend → cache result
+  submitScore({name:playerName,score,difficulty,maxStreak,maxMulti,perfectRounds,caught:totalCaught})
+    .then(res=>{
+      if(!res) return;
+      globalScoreCache[difficulty]=res.list;
+      if(tlShowDiff==="global") renderTop("global",playerName,res.list);
+    });
+  // Also pre-fetch global list for the other difficulty
+  fetchGlobalScores(difficulty).then(r=>{ if(r) globalScoreCache[difficulty]=r; });
+}
+
+// ══════════════════════════════════════
+//  START GAME
+// ══════════════════════════════════════
+function startGame(){
+  unlockAudio();
+  if(playing) return;
+  playerName=nameInput.value.trim()||"Ellie";
+  cfg=DIFF[difficulty];
+
+  cancelAnimationFrame(rafId); rafId=null;
+  clearInterval(spawnTimer); spawnTimer=null;
+  clearTimeout(challengeEndTimer); clearTimeout(bonusTimer);
+  clearAllPowerups(); stopMusic();
+  stars.forEach(s=>{ try{ s.el.remove(); }catch{} }); stars=[];
+  wrap.querySelectorAll(".trail,.particle,.catch-pop,.miss-flash,.firework,.score-pop").forEach(e=>e.remove());
+
+  score=0; level=1; streak=0; maxStreak=0;
+  multiplier=1; maxMulti=1; misses=0; totalCaught=0; perfectRounds=0;
+  roundCaught=0; roundMissed=0; roundNum=1;
+  activeChallenge=null; nextChallengeAt=cfg.roundSize*3;
+  currentSpeed=cfg.baseSpeed;
+  resetTheme(); resetRng();
+
+  scoreEl.textContent="0"; levelEl.textContent="1"; streakEl.textContent="0"; multiEl.textContent="×1";
+  buildHearts(); updateHearts(); updateSpeedBar(); updateComboRing(1);
+  comboFlash.style.opacity="0"; centreFlash.style.opacity="0"; perfectToast.style.opacity="0";
+  eventBanner.classList.remove("show");
+  document.getElementById("overlay-title").textContent="Grattis på
+Födelsedagen Ellie! 🎂";
+  document.getElementById("overlay-sub").textContent="Fånga stjärnorna och samla poäng! ✨";
+  document.getElementById("how-vuxen").style.display=difficulty==="vuxen"?"":"none";
+  document.getElementById("stats-card").style.display="none";
+  document.getElementById("end-medals").style.display="none";
+  document.getElementById("rank-line").style.display="none";
+
+  _cW=wrap.clientWidth; _cH=wrap.clientHeight;
+  ux=_cW/2; uy=_cH*FIXED_Y_FRAC;
+  unicornEl.classList.toggle("vuxen", difficulty==="vuxen");
+  comboRing.className=difficulty==="vuxen"?"vuxen":"";
+  joyTouchId=null; joyTargetX=null; joyKnob.style.left="50%";
+  updateRoundBar(); makeClouds(); applyTheme(1);
+
+  // Init rainbow trail dots on first play
+  if(rainbowDots.length===0) initRainbowDots();
+  rainbowPositions=[]; hideRainbowDots();
+
+  overlay.classList.add("hidden");
+  quitBtn.classList.add("visible");
+  playing=true;
+  scheduleSpawn();
+  lastTime=performance.now();
+  rafId=requestAnimationFrame(loop);
+
+  setTimeout(()=>{ playTune("birthday"); setTimeout(()=>{ if(playing&&!activeChallenge) playTune("normal"); },13500); },280);
+}
+
+// ══════════════════════════════════════
+//  EVENT HANDLERS
+// ══════════════════════════════════════
+document.addEventListener("keydown", e=>{ keys[e.key]=true; });
+document.addEventListener("keyup",   e=>{ keys[e.key]=false; });
+document.addEventListener("touchstart", ()=>unlockAudio(), {once:true,passive:true});
+document.addEventListener("mousedown",  ()=>unlockAudio(), {once:true});
+document.addEventListener("keydown", e=>{ if(e.key==="Escape"&&playing) endGame(); });
+
+playBtn.addEventListener("click",    ()=>{ unlockAudio(); startGame(); });
+playBtn.addEventListener("touchend", e=>{ e.preventDefault(); unlockAudio(); startGame(); });
+
+quitBtn.addEventListener("click",    ()=>{ if(playing) endGame(); });
+quitBtn.addEventListener("touchend", e=>{ e.preventDefault(); if(playing) endGame(); });
+
+document.querySelectorAll(".diff-btn").forEach(btn=>{
+  const select=()=>{
+    difficulty=btn.dataset.diff; cfg=DIFF[difficulty];
+    document.querySelectorAll(".diff-btn").forEach(b=>b.classList.remove("selected"));
+    btn.classList.add("selected");
+    renderTop(difficulty);
+    document.getElementById("how-vuxen").style.display=difficulty==="vuxen"?"":"none";
+  };
+  btn.addEventListener("click", select);
+  btn.addEventListener("touchend", e=>{ e.preventDefault(); select(); });
+});
+
+document.querySelectorAll(".tl-tab").forEach(tab=>{
+  const show=()=>{
+    const d=tab.dataset.d;
+    if(d==="global"){
+      const cached=globalScoreCache[difficulty]||globalScoreCache.barn||null;
+      renderTop("global","",cached||undefined);
+      if(!cached) fetchGlobalScores(difficulty).then(r=>{ if(r){ globalScoreCache[difficulty]=r; if(tlShowDiff==="global") renderTop("global","",r); }});
+    } else {
+      renderTop(d);
+    }
+  };
+  tab.addEventListener("click", show);
+  tab.addEventListener("touchend", e=>{ e.preventDefault(); show(); });
+});
+
+const howModal=document.getElementById("how-modal");
+const howBtn  =document.getElementById("how-btn");
+const howClose=document.getElementById("how-close");
+const openHow =()=>howModal.classList.add("show");
+const closeHow=()=>howModal.classList.remove("show");
+howBtn.addEventListener("click", openHow);
+howBtn.addEventListener("touchend", e=>{ e.preventDefault(); openHow(); });
+howClose.addEventListener("click", closeHow);
+howClose.addEventListener("touchend", e=>{ e.preventDefault(); closeHow(); });
+howModal.addEventListener("click", e=>{ if(e.target===howModal) closeHow(); });
+
+// ══════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════
+makeBgStars();
+buildHearts();
+renderTop("barn");
+
+</script>
+</body>
+</html>

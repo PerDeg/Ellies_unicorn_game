@@ -4,21 +4,40 @@
 // ══════════════════════════════════════
 const AC = window.AudioContext || window.webkitAudioContext;
 let ac = null;
+let masterGain = null;
+
+let soundEnabled = localStorage.getItem("soundEnabled") !== "false";
 
 function unlockAudio() {
-  if (!ac) ac = new AC();
+  if (!ac) {
+    ac = new AC();
+    masterGain = ac.createGain();
+    masterGain.gain.value = soundEnabled ? 1 : 0;
+    masterGain.connect(ac.destination);
+  }
   if (ac.state === "suspended") ac.resume();
   try {
+    // iOS requires the unlock buffer to connect directly to destination
     const b = ac.createBuffer(1, 1, 22050);
     const s = ac.createBufferSource();
     s.buffer = b; s.connect(ac.destination); s.start(0);
   } catch (e) {}
 }
 
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  localStorage.setItem("soundEnabled", soundEnabled);
+  if (masterGain) masterGain.gain.value = soundEnabled ? 1 : 0;
+  return soundEnabled;
+}
+
+function isSoundEnabled() { return soundEnabled; }
+
 function tone(freq, type, dur, vol, delay = 0) {
-  if (!ac) return;
+  if (!ac || !masterGain) return;
+  if (ac.state === "suspended") ac.resume();
   const o = ac.createOscillator(), g = ac.createGain();
-  o.connect(g); g.connect(ac.destination);
+  o.connect(g); g.connect(masterGain);
   o.type = type;
   const t0 = ac.currentTime + Math.max(0, delay);
   o.frequency.setValueAtTime(freq, t0);
@@ -73,26 +92,52 @@ function playGameOver() {
 // ── Background music ──────────────────────────────────────────────────────────
 const TUNES = {
   birthday: { bpm: 120, notes: [[392,0.75],[392,0.25],[440,1],[392,1],[523,1],[494,2],[392,0.75],[392,0.25],[440,1],[392,1],[587,1],[523,2],[392,0.75],[392,0.25],[784,1],[659,1],[523,1],[494,1],[440,2],[698,0.75],[698,0.25],[659,1],[523,1],[587,1],[523,2]] },
-  normal:   { bpm: 108, notes: [[659,0.5],[659,0.5],[659,1],[659,0.5],[659,0.5],[659,1],[659,0.5],[784,0.5],[523,0.5],[587,0.5],[659,2],[698,0.5],[698,0.75],[698,0.25],[698,0.5],[659,0.25],[659,0.5],[659,0.5],[587,0.5],[587,0.5],[659,0.5],[587,1],[784,1]] },
   challenge:{ bpm: 136, notes: [[784,0.5],[880,0.5],[988,0.5],[1047,0.5],[988,0.5],[880,0.5],[784,1],[698,0.5],[784,0.5],[880,0.5],[988,0.5],[1047,1],[988,0.5],[880,0.5],[784,0.5],[659,0.5],[698,0.5],[784,0.5],[880,1],[784,2]] },
   golden:   { bpm:  88, notes: [[523,1],[659,1],[784,1],[1047,2],[880,1],[784,1],[698,1],[659,2],[587,0.5],[659,0.5],[698,1],[784,1],[880,2],[1047,1],[784,3]] },
+  // EDM / party mode — square wave synth riff at 130 BPM
+  party: { bpm: 130, wave: "square", vol: 0.018, notes: [
+    [880,0.5],[880,0.5],[1047,0.5],[880,0.5],[784,0.5],[784,0.5],[880,0.5],[784,0.5],
+    [659,0.5],[659,0.5],[784,0.5],[659,0.5],[523,0.5],[587,0.5],[659,0.5],[784,0.5],
+    [880,0.75],[1047,0.25],[1319,0.5],[1047,0.5],[880,0.5],[784,0.5],
+    [880,0.25],[880,0.25],[1047,0.25],[880,0.25],[784,0.5],[659,0.5],
+    [784,0.5],[880,0.5],[1047,0.5],[1319,0.5],[1047,0.5],[880,0.5],
+    [784,0.25],[659,0.25],[523,0.5],[659,0.5],[784,0.5],[880,1],
+  ]},
 };
 
 let musicTimeout = null;
+let musicNodes = []; // all oscillators belonging to the current tune
 
 function stopMusic() {
   clearTimeout(musicTimeout);
   musicTimeout = null;
+  const now = ac ? ac.currentTime : 0;
+  musicNodes.forEach(n => { try { n.stop(now); } catch (e) {} });
+  musicNodes = [];
 }
 
 function playTune(name, loop = true) {
   if (!ac) return;
-  stopMusic();
-  const tune = TUNES[name] || TUNES.normal;
+  if (ac.state === "suspended") ac.resume();
+  stopMusic(); // kill any currently playing tune immediately
+  const tune = TUNES[name] || TUNES.birthday;
   const beat = 60 / tune.bpm;
+  const waveType = tune.wave || "sine";
+  const baseVol  = tune.vol  || 0.040;
   let t = ac.currentTime + 0.1;
   tune.notes.forEach(([f, b]) => {
-    tone(f, "sine", b * beat * 0.7, 0.040, t - ac.currentTime);
+    const dur = b * beat * 0.7;
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.connect(g); g.connect(masterGain);
+    o.type = waveType;
+    o.frequency.setValueAtTime(f, t);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(baseVol, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + Math.max(dur, 0.05));
+    o.start(t);
+    o.stop(t + Math.max(dur, 0.05) + 0.06);
+    musicNodes.push(o);
     t += b * beat;
   });
   if (loop) {

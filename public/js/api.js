@@ -39,3 +39,18 @@ async function fetchGlobalScores(difficulty) {
     return null;
   }
 }
+
+/**
+ * Fetch the combined top-10 across all difficulties.
+ * Returns an array of score objects (with .difficulty field), or null on failure.
+ */
+async function fetchAllScores() {
+  try {
+    const res = await fetch(`${API_BASE}/scores/all`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.list || null;
+  } catch {
+    return null;
+  }
+}

@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Ellie fyller 4 år! 🦄</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦄</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  min-height: 100vh;
+  background: linear-gradient(155deg, #c026d3 0%, #a855f7 38%, #7c3aed 65%, #db2777 100%);
+  font-family: 'Nunito', sans-serif;
+  color: #fff;
+  overflow-x: hidden;
+}
+
+/* ── Fixed background layers ──────────────────────────────── */
+#stars, #glitter-wrap {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;
+}
+#glitter-wrap { z-index: 1; }
+
+/* Stars */
+.star {
+  position: absolute;
+  animation: twinkle ease-in-out infinite;
+  opacity: 0.7;
+  user-select: none;
+}
+@keyframes twinkle {
+  0%, 100% { opacity: 0.2; transform: scale(0.8); }
+  50%       { opacity: 1;   transform: scale(1.3); }
+}
+
+/* Glitter particles */
+.glitter {
+  position: absolute;
+  border-radius: 50%;
+  animation: glitterFall linear forwards;
+  opacity: 0.9;
+}
+@keyframes glitterFall {
+  0%   { transform: translateY(0) rotate(0deg)   scale(1);   opacity: 0.9; }
+  80%  { opacity: 0.8; }
+  100% { transform: translateY(105vh) rotate(720deg) scale(0.4); opacity: 0; }
+}
+
+/* ── Page ─────────────────────────────────────────────────── */
+.page {
+  position: relative; z-index: 2;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 16px 16px 52px;
+}
+
+/* (rainbow bar removed — replaced by unicorn glow) */
+
+/* ── Hero ─────────────────────────────────────────────────── */
+.hero { text-align: center; padding: 4px 0 16px; }
+
+.hero-uni {
+  font-size: 82px;
+  line-height: 1;
+  display: block;
+  margin-bottom: 8px;
+  animation: uniFloat 2.8s ease-in-out infinite;
+  filter: drop-shadow(0 6px 18px rgba(0,0,0,0.3));
+}
+@keyframes uniFloat {
+  0%, 100% { transform: translateY(0)   rotate(-3deg); }
+  50%       { transform: translateY(-14px) rotate(3deg); }
+}
+
+.hb-text {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(2em, 9vw, 3em);
+  line-height: 1.1;
+  background: linear-gradient(90deg,
+    #fff 0%, #ffe066 20%, #ffb3e6 40%, #b3f0ff 60%, #ffe066 80%, #fff 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 3.5s linear infinite;
+  filter: drop-shadow(0 2px 12px rgba(255,255,255,0.5));
+}
+@keyframes shimmer {
+  0%   { background-position: 0%   center; }
+  100% { background-position: 200% center; }
+}
+
+.hero-name {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(1.6em, 7vw, 2.2em);
+  color: #fff;
+  text-shadow: 0 2px 18px rgba(0,0,0,0.3), 0 0 40px rgba(255,200,255,0.5);
+  margin-top: 2px;
+}
+
+.hero-sub {
+  font-size: 1.05em;
+  font-weight: 700;
+  margin-top: 8px;
+  color: rgba(255,255,255,0.9);
+  text-shadow: 0 1px 8px rgba(0,0,0,0.2);
+}
+
+/* ── Unicorn rainbow glow + orbiting sparkles (CPU-light, CSS-only) ── */
+.uni-wrap {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+/* Blurred rainbow ring that spins behind the unicorn — single GPU layer */
+.uni-wrap::before {
+  content: '';
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  background: conic-gradient(
+    #ff4d4d, #ff9900, #ffe600, #33cc33, #00aaff, #9933ff, #ff33cc, #ff4d4d
+  );
+  animation: uniRingSpin 4s linear infinite;
+  filter: blur(11px);
+  opacity: 0.7;
+  z-index: 0;
+  will-change: transform;
+}
+@keyframes uniRingSpin { to { transform: rotate(360deg); } }
+.hero-uni { position: relative; z-index: 1; }
+
+/* Orbiting sparkle dots — CSS transforms only, no JS, no RAF */
+.uni-sparks { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.uspark {
+  position: absolute;
+  top: 50%; left: 50%;
+  border-radius: 50%;
+  margin: calc(var(--sz, 7px) / -2) 0 0 calc(var(--sz, 7px) / -2);
+  width: var(--sz, 7px); height: var(--sz, 7px);
+  animation: sparkOrbit var(--spd) linear infinite var(--del);
+  will-change: transform;
+  opacity: 0.9;
+}
+@keyframes sparkOrbit {
+  from { transform: rotate(var(--a)) translateX(var(--r)) scale(1);   }
+  50%  { transform: rotate(calc(var(--a) + 180deg)) translateX(var(--r)) scale(1.5); }
+  to   { transform: rotate(calc(var(--a) + 360deg)) translateX(var(--r)) scale(1);   }
+}
+
+/* ── Cards ────────────────────────────────────────────────── */
+.card {
+  background: rgba(255,255,255,0.14);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.5px solid rgba(255,255,255,0.30);
+  border-radius: 24px;
+  padding: 20px 18px;
+  margin-bottom: 14px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.14);
+}
+.card h2 {
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.35em;
+  margin-bottom: 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+
+/* ── Info rows ────────────────────────────────────────────── */
+.info-row {
+  display: flex; align-items: flex-start; gap: 12px;
+  margin-bottom: 12px;
+}
+.info-row:last-child { margin-bottom: 0; }
+.info-icon { font-size: 1.35em; flex-shrink: 0; margin-top: 1px; }
+.info-text { line-height: 1.45; font-weight: 700; font-size: 1.02em; }
+.info-text .lbl { display: block; font-size: 0.78em; font-weight: 400; opacity: 0.7; margin-bottom: 1px; }
+
+/* ── Form ─────────────────────────────────────────────────── */
+.field { margin-bottom: 14px; }
+.field:last-of-type { margin-bottom: 0; }
+.field label { display: block; font-weight: 700; font-size: 0.95em; margin-bottom: 6px; }
+.req { color: #fde68a; }
+
+input[type="text"], input[type="tel"], textarea {
+  width: 100%;
+  background: rgba(255,255,255,0.18);
+  border: 1.5px solid rgba(255,255,255,0.36);
+  border-radius: 13px;
+  padding: 12px 14px;
+  color: #fff;
+  font-family: 'Nunito', sans-serif;
+  font-size: 1em; font-weight: 700;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+  -webkit-appearance: none;
+}
+input[type="text"]::placeholder, input[type="tel"]::placeholder, textarea::placeholder { color: rgba(255,255,255,0.48); font-weight: 400; }
+input[type="text"]:focus, input[type="tel"]:focus, textarea:focus {
+  border-color: rgba(255,255,255,0.75);
+  background: rgba(255,255,255,0.26);
+}
+input[type="text"].error, input[type="tel"].error { border-color: #fca5a5; }
+textarea { min-height: 88px; resize: vertical; }
+
+.field-err { font-size: 0.82em; color: #fde68a; margin-top: 5px; display: none; }
+.field-err.show { display: block; }
+
+/* ── Buttons ──────────────────────────────────────────────── */
+.btn-submit {
+  width: 100%; margin-top: 16px;
+  background: linear-gradient(135deg, #f472b6, #e879f9);
+  border: none; border-radius: 16px; padding: 15px 16px;
+  font-family: 'Fredoka One', cursive; font-size: 1.25em;
+  color: #fff; cursor: pointer;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.22);
+  transition: transform 0.12s, opacity 0.2s;
+  letter-spacing: 0.02em;
+}
+.btn-submit:active   { transform: scale(0.97); }
+.btn-submit:disabled { opacity: 0.55; cursor: default; transform: none; }
+
+.form-status {
+  margin-top: 12px; text-align: center; font-weight: 700;
+  font-size: 0.95em; border-radius: 12px; padding: 10px 12px;
+  display: none; line-height: 1.45;
+}
+.form-status.ok  { display:block; background:rgba(134,239,172,0.2); color:#bbf7d0; border:1px solid rgba(134,239,172,0.35); }
+.form-status.err { display:block; background:rgba(252,165,165,0.18); color:#fca5a5; border:1px solid rgba(252,165,165,0.35); }
+
+/* ── RSVP success section ─────────────────────────────────── */
+#rsvp-success { display: none; text-align: center; padding: 4px 0; }
+#rsvp-success .ok-icon { font-size: 3em; margin-bottom: 8px; }
+#rsvp-success .ok-title {
+  font-family: 'Fredoka One', cursive; font-size: 1.3em;
+  color: #bbf7d0; margin-bottom: 6px;
+}
+#rsvp-success .ok-sub { font-size: 0.9em; opacity: 0.7; margin-bottom: 18px; line-height: 1.5; }
+.cal-btns { display: flex; flex-direction: column; gap: 10px; }
+.btn-cal {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 12px 16px; border-radius: 14px; border: none; cursor: pointer;
+  font-family: 'Fredoka One', cursive; font-size: 1.05em; text-decoration: none;
+  transition: transform 0.12s, opacity 0.15s;
+}
+.btn-cal:active { transform: scale(0.97); }
+.btn-cal.google  { background: #fff; color: #1a1a2e; }
+.btn-cal.ical    { background: rgba(255,255,255,0.15); color: #fff; border: 1.5px solid rgba(255,255,255,0.3); }
+.btn-cal.maps    { background: rgba(255,255,255,0.10); color: rgba(255,255,255,0.75); border: 1px solid rgba(255,255,255,0.2); font-size: 0.9em; }
+
+/* ── Play button ──────────────────────────────────────────── */
+.btn-play {
+  display: block; width: 100%;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  border: none; border-radius: 22px; padding: 20px 16px;
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(1.2em, 5vw, 1.5em);
+  color: #fff; text-decoration: none; text-align: center; cursor: pointer;
+  box-shadow: 0 4px 28px rgba(0,0,0,0.28), 0 0 0 3px rgba(255,255,255,0.18);
+  transition: transform 0.12s;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.22);
+  animation: playPulse 2.5s ease-in-out infinite;
+}
+.btn-play:active { transform: scale(0.97); }
+@keyframes playPulse {
+  0%,100% { box-shadow: 0 4px 28px rgba(0,0,0,0.28), 0 0 0 3px rgba(255,255,255,0.18); }
+  50%      { box-shadow: 0 6px 36px rgba(0,0,0,0.32), 0 0 0 8px rgba(255,255,255,0.32); }
+}
+
+/* ── Footer ───────────────────────────────────────────────── */
+.footer { text-align: center; margin-top: 28px; font-size: 0.85em; opacity: 0.5; }
+</style>
+</head>
+<body>
+
+<div id="stars"></div>
+<div id="glitter-wrap"></div>
+
+<div class="page">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="uni-wrap">
+      <!-- 8 orbiting sparkles: CSS custom props set radius/speed/color inline -->
+      <div class="uni-sparks">
+        <div class="uspark" style="--a:0deg;  --r:62px;--spd:3.2s;--del:-0.0s;--sz:8px; background:#ff4d4d;"></div>
+        <div class="uspark" style="--a:45deg; --r:58px;--spd:4.1s;--del:-0.6s;--sz:6px; background:#ff9900;"></div>
+        <div class="uspark" style="--a:90deg; --r:65px;--spd:3.6s;--del:-1.2s;--sz:9px; background:#ffe600;"></div>
+        <div class="uspark" style="--a:135deg;--r:60px;--spd:4.4s;--del:-0.3s;--sz:6px; background:#33cc33;"></div>
+        <div class="uspark" style="--a:180deg;--r:63px;--spd:3.0s;--del:-0.9s;--sz:8px; background:#00aaff;"></div>
+        <div class="uspark" style="--a:225deg;--r:57px;--spd:4.8s;--del:-1.5s;--sz:7px; background:#9933ff;"></div>
+        <div class="uspark" style="--a:270deg;--r:66px;--spd:3.4s;--del:-0.4s;--sz:6px; background:#ff33cc;"></div>
+        <div class="uspark" style="--a:315deg;--r:59px;--spd:4.2s;--del:-1.8s;--sz:9px; background:#ffffff;"></div>
+      </div>
+      <span class="hero-uni">🦄</span>
+    </div>
+    <div class="hb-text">Födelsedagskalas</div>
+    <div class="hero-name">Ellie fyller 4 år! 🎂</div>
+    <p class="hero-sub">✨ Du är inbjuden till kalas! 🎉</p>
+  </div>
+
+  <!-- Party info -->
+  <div class="card">
+    <h2>🎈 Kalasinformation</h2>
+
+    <div class="info-row">
+      <span class="info-icon">📅</span>
+      <div class="info-text">
+        <span class="lbl">Datum</span>
+        Söndag 3 maj 2026
+      </div>
+    </div>
+
+    <div class="info-row">
+      <span class="info-icon">⏰</span>
+      <div class="info-text">
+        <span class="lbl">Tid</span>
+        13:30 – 15:00
+      </div>
+    </div>
+
+    <div class="info-row">
+      <span class="info-icon">📍</span>
+      <div class="info-text">
+        <span class="lbl">Plats</span>
+        Rönnbyskolans gymnastiksal
+      </div>
+    </div>
+
+    <div class="info-row">
+      <span class="info-icon">🗓️</span>
+      <div class="info-text">
+        <span class="lbl">OSA senast</span>
+        29 april 2026
+      </div>
+    </div>
+  </div>
+
+  <!-- Party description -->
+  <div class="card">
+    <p style="line-height:1.6;font-size:1.02em;font-weight:700;">
+      Kom och fira med mig! Vi kommer vara i Rönnbyskolans gymnastiksal och leka och ha skoj tillsammans. Jag bjuder på fika. Välkommen!<br><br>
+      Fyll i namn och annat vi bör känna till nedan. Hoppas vi ses på kalaset!
+    </p>
+  </div>
+
+  <!-- RSVP -->
+  <div class="card">
+    <h2>🎉 Jag kommer på kalaset!</h2>
+    <form id="rsvp-form" novalidate>
+
+      <div class="field">
+        <label for="rsvp-name">Ditt namn <span class="req">*</span></label>
+        <input type="text" id="rsvp-name" name="name" maxlength="50"
+               placeholder="Skriv ditt namn..." autocomplete="name">
+        <div class="field-err" id="name-err">Vänligen ange ditt namn.</div>
+      </div>
+
+      <div class="field">
+        <label for="rsvp-phone">Mobilnummer <span class="req">*</span></label>
+        <input type="tel" id="rsvp-phone" name="phone" maxlength="20"
+               placeholder="T.ex. 070-123 45 67" autocomplete="tel">
+        <div class="field-err" id="phone-err">Vänligen ange ditt mobilnummer.</div>
+      </div>
+
+      <div class="field">
+        <label for="rsvp-info">Allergier eller annan information:</label>
+        <textarea id="rsvp-info" name="info" maxlength="500"
+                  placeholder="T.ex. glutenintolerans, nötallergi… (valfritt)"></textarea>
+      </div>
+
+      <button type="submit" class="btn-submit" id="rsvp-btn">Anmäl mig! 🎉</button>
+      <div class="form-status" id="form-status"></div>
+    </form>
+
+    <!-- Shown after successful RSVP -->
+    <div id="rsvp-success">
+      <div class="ok-icon">🎉</div>
+      <div class="ok-title" id="ok-title">Vi ses på kalaset!</div>
+      <p class="ok-sub">Söndag 3 maj · 13:30–15:00<br>Rönnbyskolans gymnastiksal, Västerås</p>
+      <div class="cal-btns">
+        <a class="btn-cal google" id="cal-google" href="#" target="_blank" rel="noopener">
+          📅 Lägg till i Google Kalender
+        </a>
+        <button class="btn-cal ical" onclick="downloadIcal()">
+          🗓️ Ladda ner till Kalender (.ics)
+        </button>
+        <a class="btn-cal maps"
+           href="https://www.google.com/maps?q=59.64784777027596,16.50923499720162"
+           target="_blank" rel="noopener">
+          📍 Visa på karta
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Play game -->
+  <a href="/index.html" class="btn-play">🦄 Spela Ellies Enhörningsspel! ✨</a>
+
+  <div class="footer">Med kärlek till Ellie 💖</div>
+
+</div><!-- .page -->
+
+<script>
+// ── Background stars ─────────────────────────────────────────────────────────
+(function () {
+  const wrap = document.getElementById("stars");
+  const syms = ["⭐","✨","🌟","💫","⭐","✨","🌟","💫"];
+  for (let i = 0; i < 28; i++) {
+    const el = document.createElement("div");
+    el.className = "star";
+    el.textContent = syms[i % syms.length];
+    el.style.cssText = [
+      "left:"   + (Math.random() * 98) + "vw",
+      "top:"    + (Math.random() * 98) + "vh",
+      "font-size:" + (0.6 + Math.random() * 1.1) + "em",
+      "animation-delay:"    + (Math.random() * 5)   + "s",
+      "animation-duration:" + (2 + Math.random() * 3) + "s",
+    ].join(";");
+    wrap.appendChild(el);
+  }
+})();
+
+// ── Falling glitter ──────────────────────────────────────────────────────────
+(function () {
+  const wrap   = document.getElementById("glitter-wrap");
+  const colors = [
+    "#ff69b4","#ff85c2","#ffd700","#ffe066",
+    "#bf80ff","#e066ff","#66d9ff","#80ffcc",
+    "#ffffff","#ffb3de","#ff6699"
+  ];
+
+  function spawn() {
+    const el = document.createElement("div");
+    el.className = "glitter";
+    const size = 3 + Math.random() * 6;
+    const dur  = 3.5 + Math.random() * 4;
+    el.style.cssText = [
+      "left:"             + (Math.random() * 100) + "vw",
+      "top:-10px",
+      "width:"            + size + "px",
+      "height:"           + size + "px",
+      "background:"       + colors[Math.floor(Math.random() * colors.length)],
+      "animation-duration:" + dur + "s",
+    ].join(";");
+    wrap.appendChild(el);
+    setTimeout(() => el.remove(), dur * 1000 + 200);
+  }
+
+  // Stagger initial burst
+  for (let i = 0; i < 20; i++) setTimeout(spawn, i * 80);
+  // Continuous rain
+  setInterval(spawn, 200);
+})();
+
+// ── RSVP form ────────────────────────────────────────────────────────────────
+document.getElementById("rsvp-form").addEventListener("submit", async function (e) {
+  e.preventDefault();
+
+  const nameEl   = document.getElementById("rsvp-name");
+  const phoneEl  = document.getElementById("rsvp-phone");
+  const infoEl   = document.getElementById("rsvp-info");
+  const nameErr  = document.getElementById("name-err");
+  const phoneErr = document.getElementById("phone-err");
+  const statusEl = document.getElementById("form-status");
+  const btn      = document.getElementById("rsvp-btn");
+
+  nameErr.classList.remove("show");  nameEl.classList.remove("error");
+  phoneErr.classList.remove("show"); phoneEl.classList.remove("error");
+  statusEl.className = "form-status";
+  statusEl.textContent = "";
+
+  const name  = nameEl.value.trim();
+  const phone = phoneEl.value.trim();
+  let valid = true;
+  if (!name) {
+    nameErr.classList.add("show"); nameEl.classList.add("error"); valid = false;
+  }
+  if (!phone) {
+    phoneErr.classList.add("show"); phoneEl.classList.add("error"); valid = false;
+  }
+  if (!valid) { if (!name) nameEl.focus(); else phoneEl.focus(); return; }
+
+  btn.disabled = true;
+  btn.textContent = "Skickar...";
+
+  try {
+    const res  = await fetch("/api/rsvp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, phone, info: infoEl.value.trim() }),
+    });
+    const data = await res.json();
+
+    if (res.ok && data.ok) {
+      // Hide form, show success section with calendar links
+      document.getElementById("rsvp-form").style.display = "none";
+      const success = document.getElementById("rsvp-success");
+      document.getElementById("ok-title").textContent = "Tack " + name + "! 🦄";
+      // Build Google Calendar URL
+      const gcParams = new URLSearchParams({
+        action: "TEMPLATE",
+        text: "Ellies 4-årskalas 🦄",
+        dates: "20260503T133000/20260503T150000",
+        details: "Vi leker och fikar i Rönnbyskolans gymnastiksal. Välkommen!",
+        location: "Rönnbyskolan, Släggkastargatan 13, Västerås",
+      });
+      document.getElementById("cal-google").href =
+        "https://www.google.com/calendar/render?" + gcParams.toString();
+      success.style.display = "block";
+    } else {
+      throw new Error(data.error || "Okänt fel");
+    }
+  } catch (err) {
+    statusEl.className   = "form-status err";
+    statusEl.textContent = "😢 Kunde inte skicka: " + err.message + " — försök igen!";
+    btn.disabled    = false;
+    btn.textContent = "Anmäl mig! 🎉";
+  }
+});
+
+// ── .ics calendar download ────────────────────────────────────────────────────
+function downloadIcal() {
+  const ics = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Ellies Kalas//SV",
+    "BEGIN:VEVENT",
+    "UID:ellies-kalas-20260503@unicorn",
+    "DTSTART:20260503T133000",
+    "DTEND:20260503T150000",
+    "SUMMARY:Ellies 4-årskalas 🦄",
+    "DESCRIPTION:Vi leker och fikar i Rönnbyskolans gymnastiksal. Välkommen!",
+    "LOCATION:Rönnbyskolan\\, Släggkastargatan 13\\, Västerås",
+    "GEO:59.64784777027596;16.50923499720162",
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+
+  const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "ellies-kalas.ics";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+</script>
+</body>
+</html>
