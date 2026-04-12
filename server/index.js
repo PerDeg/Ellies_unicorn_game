@@ -118,6 +118,20 @@ app.get("/api/admin/guests", async (req, res) => {
   }
 });
 
+// ── DELETE /api/admin/reset ───────────────────────────────────────────────────
+// Wipes all scores and guests — protected by ADMIN_KEY.
+app.delete("/api/admin/reset", async (req, res) => {
+  const key = req.headers["x-admin-key"] || req.query.key;
+  if (key !== ADMIN_KEY) return res.status(401).json({ error: "Ej behörig" });
+  try {
+    await db.resetAll();
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("DELETE /api/admin/reset error:", err.message);
+    res.status(500).json({ error: "Database error" });
+  }
+});
+
 // ── Start ─────────────────────────────────────────────────────────────────────
 db.init()
   .then(() => {

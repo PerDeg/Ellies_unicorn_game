@@ -95,7 +95,7 @@ tbody td { padding: 10px 10px; vertical-align: top; line-height: 1.4; }
 
 .empty { text-align: center; color: rgba(255,255,255,0.3); padding: 20px; font-size: 0.9em; }
 
-/* Export button */
+/* Export / danger buttons */
 .btn-export {
   background: rgba(255,255,255,0.08);
   border: 1px solid rgba(255,255,255,0.22);
@@ -105,6 +105,26 @@ tbody td { padding: 10px 10px; vertical-align: top; line-height: 1.4; }
   transition: background 0.15s;
 }
 .btn-export:hover { background: rgba(255,255,255,0.15); }
+.btn-danger {
+  background: rgba(220,38,38,0.18);
+  border: 1px solid rgba(252,165,165,0.4);
+  border-radius: 12px; padding: 8px 18px;
+  font-family: 'Fredoka One', cursive; font-size: 0.95em;
+  color: #fca5a5; cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-danger:hover { background: rgba(220,38,38,0.35); }
+.reset-confirm {
+  display: none; margin-top: 12px;
+  background: rgba(220,38,38,0.15);
+  border: 1px solid rgba(252,165,165,0.35);
+  border-radius: 14px; padding: 14px 16px;
+}
+.reset-confirm p { font-size: 0.9em; color: #fca5a5; margin-bottom: 10px; }
+.reset-confirm-btns { display: flex; gap: 10px; }
+.reset-confirm-btns button { flex: 1; padding: 9px; border-radius: 10px; border: none; font-family: 'Fredoka One', cursive; font-size: 1em; cursor: pointer; }
+#reset-yes { background: #dc2626; color: #fff; }
+#reset-no  { background: rgba(255,255,255,0.12); color: #fff; }
 
 .top-actions { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
 .top-actions h2 { font-family: 'Fredoka One', cursive; font-size: 1.2em; color: #c4b5fd; }
@@ -134,7 +154,17 @@ tbody td { padding: 10px 10px; vertical-align: top; line-height: 1.4; }
     <div class="card">
       <div class="top-actions">
         <h2>📋 Anmälda gäster</h2>
-        <button class="btn-export" onclick="exportCSV()">⬇ Exportera CSV</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn-export" onclick="exportCSV()">⬇ Exportera CSV</button>
+          <button class="btn-danger" onclick="showResetConfirm()">🗑 Rensa testdata</button>
+        </div>
+      </div>
+      <div class="reset-confirm" id="reset-confirm">
+        <p>Raderar ALL data (poäng + gäster) permanent. Kan inte ångras!</p>
+        <div class="reset-confirm-btns">
+          <button id="reset-yes" onclick="doReset()">Ja, rensa allt</button>
+          <button id="reset-no"  onclick="hideResetConfirm()">Avbryt</button>
+        </div>
       </div>
       <table>
         <thead>
@@ -231,6 +261,30 @@ function showGuests() {
 
 function esc(s) {
   return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function showResetConfirm() {
+  document.getElementById("reset-confirm").style.display = "block";
+}
+function hideResetConfirm() {
+  document.getElementById("reset-confirm").style.display = "none";
+}
+async function doReset() {
+  document.getElementById("reset-yes").disabled = true;
+  document.getElementById("reset-yes").textContent = "Rensar…";
+  try {
+    const res = await fetch("/api/admin/reset", {
+      method: "DELETE",
+      headers: { "x-admin-key": adminKey }
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    guestData = [];
+    hideResetConfirm();
+    showGuests();
+  } catch (err) {
+    document.getElementById("reset-yes").textContent = "Fel — försök igen";
+    document.getElementById("reset-yes").disabled = false;
+  }
 }
 
 function exportCSV() {

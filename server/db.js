@@ -111,4 +111,8 @@ async function getGuests() {
   return rows;
 }
 
-module.exports = { init, addScore, getTop, getAllTop, addGuest, getGuests };
+async function resetAll() {
+  await pool.query(`TRUNCATE TABLE scores, guests RESTART IDENTITY`);
+}
+
+module.exports = { init, addScore, getTop, getAllTop, addGuest, getGuests, resetAll };
