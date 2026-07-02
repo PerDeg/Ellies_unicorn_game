@@ -35,7 +35,6 @@ let ux=0, uy=0, streak=0, maxStreak=0;
 let multiplier=1, maxMulti=1;
 let misses=0, totalCaught=0, perfectRounds=0;
 let roundCaught=0, roundMissed=0, roundNum=1;
-let goodCatchesForLife=0;
 let currentSpeed=DIFF.barn.baseSpeed;
 let stars=[], spawnTimer=null, rafId=null, trailTimer=0;
 let lastTime=0, playerName="Ellie";
@@ -385,7 +384,6 @@ function onCatch(starType,x,y){
   const pts=starType.pts*multiplier;
   score+=pts; scoreEl.textContent=score;
   streak++; totalCaught++; roundCaught++;
-  goodCatchesForLife++;
   if(streak>maxStreak) maxStreak=streak;
   streakEl.textContent=streak;
   currentSpeed=Math.min(currentSpeed+cfg.speedInc,cfg.maxSpeed);
@@ -412,20 +410,11 @@ function onCatch(starType,x,y){
   playCatch(1+streak*0.006);
   updateRoundBar();
   checkRoundEnd();
-  if(difficulty==="barn"&&misses>0&&goodCatchesForLife>=12){
-    misses--; goodCatchesForLife=0;
-    updateHearts();
-    showBanner("💖 Bonusliv för fin streak!","normal",1400);
-    const d=document.createElement("div"); d.className="score-pop";
-    d.textContent="💖 +1 Liv"; d.style.cssText=`left:${x}px;top:${y}px;font-size:20px;color:#f9a8d4;`;
-    wrap.appendChild(d); setTimeout(()=>{if(d.parentNode)d.parentNode.removeChild(d);},900);
-  }
   if(totalCaught>=nextChallengeAt&&!activeChallenge) activateChallenge();
 }
 function onMiss(sx,sy){
   // Missing a sprite has no penalty — only catching bad sprites costs anything.
   roundMissed++; totalCaught++;
-  goodCatchesForLife=0;
   updateRoundBar(); checkRoundEnd();
   missPop(sx,sy); playMiss();
 }
@@ -439,7 +428,6 @@ function floatPop(x,y,txt,color,cls="miss-flash",size=20){
 function onBadCatch(type,x,y){
   // Always break streak on catching any bad sprite — speed is NOT reset
   streak=0; streakEl.textContent=0;
-  goodCatchesForLife=0;
   multiplier=1; multiEl.textContent="×1";
   updateComboRing(1);
   updateSpeedBar();
@@ -522,6 +510,7 @@ function activateChallenge(){
 function loop(ts){
   if(!playing) return;
   const dt=Math.min(ts-lastTime,50); lastTime=ts;
+  _cW=wrap.clientWidth; _cH=wrap.clientHeight;
 
   const spd=UNICORN_SPEED*(dt/16);
   if(joyTouchId!==null&&joyTargetX!==null) ux=joyTargetX;
@@ -575,9 +564,6 @@ function loop(ts){
 
   cloudEls.forEach(c=>{ c.x+=c.speed*(dt/16); if(c.x>_cW+200) c.x=-200; c.el.style.left=c.x+"px"; });
   rafId=requestAnimationFrame(loop);
-}
-function refreshBounds(){
-  _cW=wrap.clientWidth; _cH=wrap.clientHeight;
 }
 
 // Bounds refresh (called on resize/orientation change)
@@ -726,8 +712,6 @@ document.addEventListener("keydown", e=>{
   if(e.key==="Escape"&&playing) endGame();
 });
 document.addEventListener("keyup",   e=>{ keys[e.key]=false; });
-window.addEventListener("resize", refreshBounds);
-window.addEventListener("orientationchange", refreshBounds);
 document.addEventListener("touchstart", ()=>unlockAudio(), {once:true,passive:true});
 document.addEventListener("mousedown",  ()=>unlockAudio(), {once:true});
 
