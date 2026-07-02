@@ -40,6 +40,7 @@ let stars=[], spawnTimer=null, rafId=null, trailTimer=0;
 let lastTime=0, playerName="Ellie";
 let difficulty="barn", cfg=DIFF.barn;
 let activeChallenge=null, nextChallengeAt=30, challengeEndTimer=null;
+let challengeBag=[]; // shuffle bag — every challenge appears once per cycle
 let meteorHits=0, crownActive=false;
 let activePowerups={};
 let _cW=0, _cH=0;
@@ -517,9 +518,21 @@ function checkRoundEnd(){
 // ══════════════════════════════════════
 //  CHALLENGE
 // ══════════════════════════════════════
+// Shuffle-bag pick: draw each challenge once before any repeats (party is
+// weighted 3× in CHALLENGES so it still shows up 3 times per cycle)
+function nextChallenge(){
+  if(!challengeBag.length){
+    challengeBag=[...CHALLENGES];
+    for(let i=challengeBag.length-1;i>0;i--){
+      const j=Math.floor(seededRng()*(i+1));
+      [challengeBag[i],challengeBag[j]]=[challengeBag[j],challengeBag[i]];
+    }
+  }
+  return challengeBag.pop();
+}
 function activateChallenge(){
   clearTimeout(challengeEndTimer);
-  const c=CHALLENGES[Math.floor(seededRng()*CHALLENGES.length)];
+  const c=nextChallenge();
   activeChallenge=c;
   meteorHits=0; crownActive=false;
   wrap.classList.add("in-bonus");
@@ -549,8 +562,8 @@ function activateChallenge(){
     }
     playTune("birthday");
   },bonusDur);
-  // Gap grows with level so high-level players face more danger
-  nextChallengeAt=totalCaught+cfg.roundSize*4+level*4+Math.floor(seededRng()*15);
+  // Modest gap growth with level — challenges should stay frequent
+  nextChallengeAt=totalCaught+cfg.roundSize*3+level*2+Math.floor(seededRng()*10);
 }
 // ══════════════════════════════════════
 //  GAME LOOP
@@ -725,8 +738,8 @@ function startGame(){
   score=0; level=1; streak=0; maxStreak=0;
   multiplier=1; maxMulti=1; misses=cfg.startMisses||0; totalCaught=0; perfectRounds=0;
   roundCaught=0; roundMissed=0; roundNum=1;
-  activeChallenge=null; nextChallengeAt=cfg.roundSize*8;
-  meteorHits=0; crownActive=false;
+  activeChallenge=null; nextChallengeAt=cfg.roundSize*2; // first bonus arrives early
+  challengeBag=[]; meteorHits=0; crownActive=false;
   wrap.classList.remove("in-blackout"); unicornEl.classList.remove("mirrored");
   currentSpeed=cfg.baseSpeed;
   resetTheme(); resetRng();
