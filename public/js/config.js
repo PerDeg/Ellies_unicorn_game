@@ -100,7 +100,17 @@ const CHALLENGES = [
   { id: "party",   label: "🎉 Festläge!", partyMode: true, music: "challenge" },
   { id: "party",   label: "🎉 Festläge!", partyMode: true, music: "challenge" },
   { id: "party",   label: "🎉 Festläge!", partyMode: true, music: "challenge" }, // weighted 3×
+  { id: "mirror",  label: "🪞 Spegelläge — styrningen är omvänd!", mirror: true, music: "challenge" },
+  { id: "meteor",  label: "☄️ Meteorregn — undvik allt!", meteorMode: true, music: "challenge" },
+  { id: "crown",   label: "👑 Gyllene stjärnan!", goldenChase: true, music: "golden" },
+  { id: "blackout",label: "🌘 Mörkerläge!", blackout: true, music: "challenge" },
 ];
+
+// Crown sprite for the golden-chase round (per difficulty)
+const CROWN_TYPES = {
+  barn:  { emoji: "👑", pts: 30, size: 46, crown: true },
+  vuxen: { emoji: "👑", pts: 50, size: 40, crown: true },
+};
 
 // ══════════════════════════════════════
 //  VISUAL CONSTANTS

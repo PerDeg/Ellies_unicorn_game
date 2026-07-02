@@ -40,6 +40,7 @@ let stars=[], spawnTimer=null, rafId=null, trailTimer=0;
 let lastTime=0, playerName="Ellie";
 let difficulty="barn", cfg=DIFF.barn;
 let activeChallenge=null, nextChallengeAt=30, challengeEndTimer=null;
+let meteorHits=0, crownActive=false;
 let activePowerups={};
 let _cW=0, _cH=0;
 let _lastUx=-1, _lastUy=-1;
@@ -287,11 +288,29 @@ function getMultiplier(str){
 // ══════════════════════════════════════
 //  SPAWN
 // ══════════════════════════════════════
+// Normal (non-challenge) spawn distribution — also used by the blackout round
+function pickNormalSpawn(){
+  const r=seededRng();
+  const lifeP=lifeChance(difficulty, totalCaught);
+  const skulP=skullChance(difficulty, level);
+  const moonP=moonChance(difficulty, level);
+  if(r < lifeP)             return {kind:"life", type:LIFE_TYPES[Math.floor(seededRng()*LIFE_TYPES.length)]};
+  if(r < lifeP+skulP)       return {kind:"bad",  type:BAD_TYPES[0]}; // 💀 life-taker
+  if(r < lifeP+skulP+moonP) return {kind:"bad",  type:BAD_TYPES[1]}; // 🌑 point penalty
+  return {kind:"good", type:pickStarType()};
+}
 function spawnOneStar(xOver){
   if(!playing) return;
   let type, kind="good";
-  if(activeChallenge){
-    // Bonus round — only good sprites, no bad/life
+  if(activeChallenge?.meteorMode){
+    // Survival round — only dangers rain down
+    kind="bad";
+    type=seededRng()<0.45?BAD_TYPES[0]:BAD_TYPES[1];
+  } else if(activeChallenge?.blackout){
+    // Blackout keeps the normal mix — darkness IS the difficulty
+    ({kind,type}=pickNormalSpawn());
+  } else if(activeChallenge){
+    // Other bonus rounds — only good sprites, no bad/life
     kind="good";
     if(activeChallenge.partyMode){
       type=PARTY_TYPES[Math.floor(seededRng()*PARTY_TYPES.length)];
@@ -299,19 +318,7 @@ function spawnOneStar(xOver){
       type=activeChallenge.forceType!==undefined?STAR_TYPES[activeChallenge.forceType]:pickStarType();
     }
   } else {
-    const r=seededRng();
-    const lifeP=lifeChance(difficulty, totalCaught);
-    const skulP=skullChance(difficulty, level);
-    const moonP=moonChance(difficulty, level);
-    if(r < lifeP){
-      kind="life"; type=LIFE_TYPES[Math.floor(seededRng()*LIFE_TYPES.length)];
-    } else if(r < lifeP+skulP){
-      kind="bad"; type=BAD_TYPES[0]; // 💀 life-taker
-    } else if(r < lifeP+skulP+moonP){
-      kind="bad"; type=BAD_TYPES[1]; // 🌑 point penalty
-    } else {
-      kind="good"; type=pickStarType();
-    }
+    ({kind,type}=pickNormalSpawn());
   }
   const el=document.createElement("div");
   el.className=kind==="bad"?"fbad":"fstar";
@@ -321,6 +328,7 @@ function spawnOneStar(xOver){
     else               el.classList.add("moon-sprite");
   } else {
     el.style.animationDelay=`-${(Math.random()*1.6).toFixed(2)}s`;
+    if(activeChallenge?.blackout) el.classList.add("blackout-glow");
   }
   el.textContent=type.emoji;
   const sz=type.size+(kind==="good"?(activeChallenge?.sizeBoost||0):0);
@@ -345,9 +353,30 @@ function spawnPowerupSprite(){
   wrap.insertBefore(el,centreFlash);
   stars.push({el,x:x+20,y:-50,speed:currentSpeed*0.7,type,kind:"powerup"});
 }
+// Golden-chase crown: zig-zags on a sine wave, one on screen at a time
+function spawnCrown(){
+  if(!playing||crownActive) return;
+  crownActive=true;
+  const type=CROWN_TYPES[difficulty];
+  const el=document.createElement("div");
+  el.className="fstar crown-sprite";
+  el.textContent=type.emoji;
+  el.style.fontSize=type.size+"px";
+  const half=type.size/2;
+  const w=_cW||wrap.clientWidth;
+  const baseX=100+Math.random()*(w-200);
+  el.style.left=(baseX-half)+"px"; el.style.top="-60px";
+  wrap.insertBefore(el,centreFlash);
+  stars.push({el,x:baseX,y:-60,speed:currentSpeed*(difficulty==="barn"?0.65:0.8),
+    type,kind:"good",trailEmit:0,
+    zig:{baseX,half,phase:Math.random()*6,
+         amp:difficulty==="barn"?60:110,
+         freq:difficulty==="barn"?0.0035:0.005}});
+}
 function spawnStar(){
   if(!playing) return;
   spawnOneStar();
+  if(activeChallenge?.goldenChase) spawnCrown();
   const rw=()=>36+Math.random()*((_cW||wrap.clientWidth)-80);
   if(activeChallenge?.doubleSpawn){
     setTimeout(()=>spawnOneStar(rw()),200);
@@ -399,6 +428,10 @@ function onCatch(starType,x,y){
   flashWrap("rgba(255,220,0,0.30)");
   scorePop(x,y-20,pts,oldM);
   catchPop(x,y);
+  if(starType.crown){
+    firework(x,y); playWow();
+    showBanner("👑 Gyllene stjärnan! +"+pts+"p","perfect",2200);
+  }
   updateRankHud();
   const mt=cfg.multiThresh;
   if(streak===mt[1]){ playStreak5(); streakWord("×2! 🌟",x,y); }
@@ -426,6 +459,7 @@ function floatPop(x,y,txt,color,cls="miss-flash",size=20){
   wrap.appendChild(d); setTimeout(()=>d.remove(),900);
 }
 function onBadCatch(type,x,y){
+  if(activeChallenge?.meteorMode) meteorHits++; // spoils the survival bonus
   // Always break streak on catching any bad sprite — speed is NOT reset
   streak=0; streakEl.textContent=0;
   multiplier=1; multiEl.textContent="×1";
@@ -487,18 +521,32 @@ function activateChallenge(){
   clearTimeout(challengeEndTimer);
   const c=CHALLENGES[Math.floor(seededRng()*CHALLENGES.length)];
   activeChallenge=c;
+  meteorHits=0; crownActive=false;
   wrap.classList.add("in-bonus");
+  if(c.blackout) wrap.classList.add("in-blackout");
+  if(c.mirror)   unicornEl.classList.add("mirrored");
   const badge=document.getElementById("bonus-badge");
   if(badge){ badge.textContent="🎯 "+c.label; badge.classList.add("show"); }
   showBanner("🎯 BONUS: "+c.label,"challenge",3200);
   flashCentre("🎯 BONUSRUNDA!\n"+c.label,1800);
   playWow(); playTune(c.partyMode?"party":c.music==="golden"?"golden":"challenge");
-  // Duration shrinks at higher levels (max 18s → min 8s)
-  const bonusDur=Math.max(18000-level*200, 8000);
+  // Duration shrinks at higher levels (max 18s → min 8s).
+  // Meteor storm is a short dodge burst — kids get 8s, adults 10s.
+  const bonusDur=c.meteorMode
+    ? (difficulty==="barn"?8000:10000)
+    : Math.max(18000-level*200, 8000);
   challengeEndTimer=setTimeout(()=>{
+    const survived=c.meteorMode&&meteorHits===0;
     activeChallenge=null;
-    wrap.classList.remove("in-bonus");
+    wrap.classList.remove("in-bonus","in-blackout");
+    unicornEl.classList.remove("mirrored");
     if(badge) badge.classList.remove("show");
+    if(survived){
+      const bonus=(difficulty==="barn"?25:40)+level*2;
+      score+=bonus; scoreEl.textContent=score;
+      playPerfect(); perfectFireworks();
+      showBanner("🏆 Överlevde meteorregnet! +"+bonus+"p","perfect",2600);
+    }
     playTune("birthday");
   },bonusDur);
   // Gap grows with level so high-level players face more danger
@@ -513,10 +561,12 @@ function loop(ts){
   _cW=wrap.clientWidth; _cH=wrap.clientHeight;
 
   const spd=UNICORN_SPEED*(dt/16);
-  if(joyTouchId!==null&&joyTargetX!==null) ux=joyTargetX;
+  const mirror=!!activeChallenge?.mirror; // 🪞 mirror round: controls reversed
+  if(joyTouchId!==null&&joyTargetX!==null) ux=mirror?Math.max(36,Math.min(_cW-36,_cW-joyTargetX)):joyTargetX;
   else {
-    if(keys["ArrowLeft"]||keys["a"]) ux=Math.max(36,ux-spd);
-    if(keys["ArrowRight"]||keys["d"]) ux=Math.min(_cW-36,ux+spd);
+    const goL=keys["ArrowLeft"]||keys["a"], goR=keys["ArrowRight"]||keys["d"];
+    if(mirror?goR:goL) ux=Math.max(36,ux-spd);
+    if(mirror?goL:goR) ux=Math.min(_cW-36,ux+spd);
   }
   uy=_cH*FIXED_Y_FRAC;
   if(ux!==_lastUx||uy!==_lastUy){
@@ -538,6 +588,11 @@ function loop(ts){
   for(let i=stars.length-1;i>=0;i--){
     const s=stars[i];
     s.y+=s.speed*speedMult*(dt/16);
+    if(s.zig){ // 👑 crown zig-zags on a sine wave
+      s.zig.phase+=dt*s.zig.freq;
+      s.x=Math.max(24,Math.min(_cW-24,s.zig.baseX+Math.sin(s.zig.phase)*s.zig.amp));
+      s.el.style.left=(s.x-s.zig.half)+"px";
+    }
     applyMagnet(s);
     s.el.style.top=s.y+"px";
 
@@ -551,13 +606,15 @@ function loop(ts){
     const caught=dx*dx+dy*dy<cr2||rainbowCatches(s);
     if(caught){
       s.el.remove(); stars.splice(i,1);
+      if(s.type.crown) crownActive=false;
       if(s.kind==="bad")        onBadCatch(s.type,s.x,s.y);
       else if(s.kind==="life")  onLifeCatch(s.type,s.x,s.y);
       else if(s.kind==="powerup"){ activatePowerup(s.type); burst(s.x,s.y,8); }
       else                      onCatch(s.type,s.x,s.y);
     } else if(s.y>_cH+50){
       s.el.remove(); stars.splice(i,1);
-      if(s.kind==="good") onMiss(s.x,_cH-16);
+      if(s.type.crown) crownActive=false;             // escaped crown ≠ round miss
+      else if(s.kind==="good") onMiss(s.x,_cH-16);
       // bad / life / powerup that fall off: neutral
     }
   }
@@ -608,7 +665,8 @@ function endGame(){
   clearTimeout(spawnTimer); spawnTimer=null;
   clearTimeout(challengeEndTimer); clearTimeout(bonusTimer);
   clearAllPowerups(); stopMusic();
-  wrap.classList.remove("in-bonus");
+  wrap.classList.remove("in-bonus","in-blackout");
+  unicornEl.classList.remove("mirrored");
   const _bb=document.getElementById("bonus-badge"); if(_bb) _bb.classList.remove("show");
   quitBtn.classList.remove("visible");
 
@@ -668,6 +726,8 @@ function startGame(){
   multiplier=1; maxMulti=1; misses=cfg.startMisses||0; totalCaught=0; perfectRounds=0;
   roundCaught=0; roundMissed=0; roundNum=1;
   activeChallenge=null; nextChallengeAt=cfg.roundSize*8;
+  meteorHits=0; crownActive=false;
+  wrap.classList.remove("in-blackout"); unicornEl.classList.remove("mirrored");
   currentSpeed=cfg.baseSpeed;
   resetTheme(); resetRng();
 
