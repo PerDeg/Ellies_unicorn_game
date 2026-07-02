@@ -177,7 +177,7 @@ tbody td { padding: 10px 10px; vertical-align: top; line-height: 1.4; }
           </tr>
         </thead>
         <tbody id="guest-body">
-          <tr><td colspan="4" class="empty">Laddar…</td></tr>
+          <tr><td colspan="5" class="empty">Laddar…</td></tr>
         </tbody>
       </table>
     </div>
@@ -232,13 +232,6 @@ function showGuests() {
     <div class="stat-pill">${guestData.length}<span>anmälda</span></div>
     ${withInfo ? `<div class="stat-pill">${withInfo}<span>med allergi/info</span></div>` : ""}
   `;
-  if (!guestData.length) {
-    document.getElementById("guest-body").innerHTML = `<tr><td colspan="5" class="empty">Inga anmälningar än 😊</td></tr>`;
-    document.getElementById("login-section").style.display = "none";
-    document.getElementById("guest-section").style.display = "block";
-    return;
-  }
-
   // Table
   const body = document.getElementById("guest-body");
   if (!guestData.length) {

@@ -77,6 +77,10 @@ function addToTop(name,sc,ms,mx,pf,caught,d=difficulty){
 }
 
 const MEDALS=["🥇","🥈","🥉","4","5","6","7","8","9","10"];
+// Names from the server may contain HTML — always escape before innerHTML
+function escHtml(s){
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
 function renderTop(d, highlightName="", incomingList=undefined){
   tlShowDiff=d;
   document.querySelectorAll(".tl-tab").forEach(t=>t.classList.toggle("active",t.dataset.d===d));
@@ -124,7 +128,7 @@ function renderTop(d, highlightName="", incomingList=undefined){
       : "";
     return `<tr class="${isMe?'me':''}">
       <td>${MEDALS[i]||i+1}</td>
-      <td>${e.name||"Anonym"}</td>
+      <td>${escHtml(e.name||"Anonym")}</td>
       ${diffBadge}
       <td>${e.score}</td>
       <td>${e.maxStreak||0}</td>
@@ -227,6 +231,31 @@ function rainbowCatches(s){
   return false;
 }
 
+// ── Star sparkle tail (pooled — avoids DOM churn at high spawn rates) ─────────
+const TAIL_POOL_SIZE=48;
+const TAIL_COLORS=["#ffe066","#ff9de2","#a78bfa","#67e8f9","#86efac","#fcd34d"];
+let tailDots=[], tailIdx=0;
+function initTailDots(){
+  for(let i=0;i<TAIL_POOL_SIZE;i++){
+    const d=document.createElement("div");
+    d.className="star-tail-dot"; d.style.display="none";
+    wrap.appendChild(d); tailDots.push(d);
+  }
+}
+function hideTailDots(){ tailDots.forEach(d=>{ if(d._anim) d._anim.cancel(); d.style.display="none"; }); }
+function emitTailDot(x,y){
+  const d=tailDots[tailIdx]; tailIdx=(tailIdx+1)%TAIL_POOL_SIZE;
+  if(d._anim) d._anim.cancel();
+  d.style.display="block";
+  d.style.background=TAIL_COLORS[Math.floor(Math.random()*TAIL_COLORS.length)];
+  d.style.left=(x-4)+"px"; d.style.top=(y-4)+"px";
+  d._anim=d.animate(
+    [{opacity:0.72,transform:"scale(1)"},{opacity:0,transform:"scale(0.15)"}],
+    {duration:420,easing:"ease-out"}
+  );
+  d._anim.onfinish=()=>{ d.style.display="none"; };
+}
+
 // ══════════════════════════════════════
 //  DYNAMIC ROUND SIZE (grows with level)
 // ══════════════════════════════════════
@@ -236,20 +265,15 @@ function getRoundBonus(){ return cfg.perfBonus+Math.floor((level-1)*0.8); }
 // ══════════════════════════════════════
 //  LIVE RANK INDICATOR
 // ══════════════════════════════════════
+// Toplist snapshot taken at game start — avoids JSON-parsing localStorage on every catch
+let _rankTop=[];
+const rankHudEl=document.getElementById("rank-hud");
 function updateRankHud(){
-  const el=document.getElementById("rank-hud"); if(!el) return;
-  const top=loadTop(difficulty);
-  if(!top.length){ el.textContent=""; return; }
-  const rank=top.findIndex(e=>score>=e.score);
-  if(rank===0)     el.textContent="🥇";
-  else if(rank===1)el.textContent="🥈";
-  else if(rank===2)el.textContent="🥉";
-  else if(rank<0&&score>0) el.textContent="";
-  else             el.textContent="";
-  // Show label if beating or at top score
-  if(score>0&&score>=top[0].score) el.textContent="🥇 Nytt rekord!";
-  else if(rank>=0&&rank<3)         el.textContent=[" 🥇"," 🥈"," 🥉"][rank];
-  else                              el.textContent="";
+  if(!rankHudEl) return;
+  if(!_rankTop.length||score<=0){ rankHudEl.textContent=""; return; }
+  if(score>=_rankTop[0].score){ rankHudEl.textContent="🥇 Nytt rekord!"; return; }
+  const rank=_rankTop.findIndex(e=>score>=e.score);
+  rankHudEl.textContent=(rank>=0&&rank<3)?[" 🥇"," 🥈"," 🥉"][rank]:"";
 }
 
 // ══════════════════════════════════════
@@ -405,6 +429,13 @@ function onMiss(sx,sy){
   updateRoundBar(); checkRoundEnd();
   missPop(sx,sy); playMiss();
 }
+// Floating text at a sprite position (danger/reward feedback)
+function floatPop(x,y,txt,color,cls="miss-flash",size=20){
+  const d=document.createElement("div"); d.className=cls;
+  d.textContent=txt;
+  d.style.cssText=`left:${x}px;top:${y}px;color:${color};font-size:${size}px;`;
+  wrap.appendChild(d); setTimeout(()=>d.remove(),900);
+}
 function onBadCatch(type,x,y){
   // Always break streak on catching any bad sprite — speed is NOT reset
   streak=0; streakEl.textContent=0;
@@ -421,9 +452,7 @@ function onBadCatch(type,x,y){
     setTimeout(()=>wrap.style.outline="",300);
     showBanner("💀 -1 Liv! Streak bruten!","danger",2000);
     flashCentre("💀 MINUS ETT LIV!",1200);
-    const d=document.createElement("div"); d.className="miss-flash";
-    d.textContent="💀 -Liv!"; d.style.cssText=`left:${x}px;top:${y}px;color:#ff4444;font-size:20px;`;
-    wrap.appendChild(d); setTimeout(()=>{if(d.parentNode)d.parentNode.removeChild(d);},900);
+    floatPop(x,y,"💀 -Liv!","#ff4444");
     if(misses>=cfg.maxMisses) endGame();
   } else {
     // 🌑 — big point penalty
@@ -431,32 +460,15 @@ function onBadCatch(type,x,y){
     score=Math.max(0,score+type.pts); scoreEl.textContent=score;
     flashWrap("rgba(255,0,0,0.45)");
     showBanner(type.emoji+" "+type.pts+"p  Streak bruten!","danger",1400);
-    const d=document.createElement("div"); d.className="miss-flash";
-    d.textContent=type.emoji+" "+type.pts+"p";
-    d.style.cssText=`left:${x}px;top:${y}px;color:#ff4444;font-size:18px;`;
-    wrap.appendChild(d); setTimeout(()=>{if(d.parentNode)d.parentNode.removeChild(d);},800);
+    floatPop(x,y,type.emoji+" "+type.pts+"p","#ff4444","miss-flash",18);
   }
 }
 function onLifeCatch(type,x,y){
-  if(!type.givesLife){
-    // 💔
-    misses++; updateHearts(); playBadCatch(true);
-    wrap.style.outline="4px solid rgba(255,0,0,0.6)";
-    setTimeout(()=>wrap.style.outline="",250);
-    showBanner("💔 -1 Liv!","danger",1600);
-    flashCentre("💔 MINUS ETT LIV!",1100);
-    const d=document.createElement("div"); d.className="miss-flash";
-    d.textContent="💔 -Liv!"; d.style.cssText=`left:${x}px;top:${y}px;color:#ff4444;font-size:20px;`;
-    wrap.appendChild(d); setTimeout(()=>{if(d.parentNode)d.parentNode.removeChild(d);},800);
-    if(misses>=cfg.maxMisses) endGame();
-  } else {
-    if(misses>0){ misses--; updateHearts(); }
-    playMultiUp(2); showBanner("💚 +1 Liv!","normal",1500);
-    const d=document.createElement("div"); d.className="score-pop";
-    d.textContent="💚 +❤️"; d.style.cssText=`left:${x}px;top:${y}px;font-size:20px;color:#86efac;`;
-    wrap.appendChild(d); setTimeout(()=>{if(d.parentNode)d.parentNode.removeChild(d);},900);
-    burst(x,y,10);
-  }
+  // All life sprites give a life (skull is the only life-taker)
+  if(misses>0){ misses--; updateHearts(); }
+  playMultiUp(2); showBanner("💚 +1 Liv!","normal",1500);
+  floatPop(x,y,"💚 +❤️","#86efac","score-pop");
+  burst(x,y,10);
 }
 
 // ══════════════════════════════════════
@@ -534,7 +546,6 @@ function loop(ts){
   const cr=cfg.catchRadius+((activeChallenge?.sizeBoost||0)>0?12:0);
   const cr2=cr*cr;
 
-  const TRAIL_COLORS=["#ffe066","#ff9de2","#a78bfa","#67e8f9","#86efac","#fcd34d"];
   for(let i=stars.length-1;i>=0;i--){
     const s=stars[i];
     s.y+=s.speed*speedMult*(dt/16);
@@ -544,16 +555,7 @@ function loop(ts){
     // Sparkle tail for regular good stars (not party/bad)
     if(s.kind==="good"&&!activeChallenge?.partyMode&&s.y>0){
       s.trailEmit=(s.trailEmit||0)+dt;
-      if(s.trailEmit>30){
-        s.trailEmit=0;
-        const td=document.createElement("div");
-        td.className="star-tail-dot";
-        td.style.background=TRAIL_COLORS[Math.floor(Math.random()*TRAIL_COLORS.length)];
-        td.style.left=(s.x-4)+"px";
-        td.style.top=(s.y-4)+"px";
-        wrap.appendChild(td);
-        setTimeout(()=>td.remove(),450);
-      }
+      if(s.trailEmit>30){ s.trailEmit=0; emitTailDot(s.x,s.y); }
     }
 
     const dx=s.x-ux, dy=s.y-uy;
@@ -647,15 +649,17 @@ function endGame(){
   playGameOver();
   setTimeout(()=>overlay.classList.remove("hidden"),380);
 
-  // Async: submit to backend → cache result
+  // Async: submit to backend → cache the per-difficulty list it returns,
+  // then refresh the combined list (the new score may have entered it)
+  globalScoreCache.alla=null;
   submitScore({name:playerName,score,difficulty,maxStreak,maxMulti,perfectRounds,caught:totalCaught})
     .then(res=>{
-      if(!res) return;
-      globalScoreCache[difficulty]=res.list;
-      if(tlShowDiff==="alla") renderTop("alla",playerName,res.list);
+      if(res) globalScoreCache[difficulty]=res.list;
+      return fetchAllScores();
+    })
+    .then(r=>{
+      if(r){ globalScoreCache.alla=r; if(tlShowDiff==="alla") renderTop("alla",playerName,r); }
     });
-  // Also pre-fetch global list for the other difficulty
-  fetchGlobalScores(difficulty).then(r=>{ if(r) globalScoreCache[difficulty]=r; });
 }
 
 // ══════════════════════════════════════
@@ -672,7 +676,7 @@ function startGame(){
   clearTimeout(challengeEndTimer); clearTimeout(bonusTimer);
   clearAllPowerups(); stopMusic();
   stars.forEach(s=>{ try{ s.el.remove(); }catch{} }); stars=[];
-  wrap.querySelectorAll(".trail,.particle,.catch-pop,.miss-flash,.firework,.score-pop,.star-tail-dot").forEach(e=>e.remove());
+  wrap.querySelectorAll(".trail,.particle,.catch-pop,.miss-flash,.firework,.score-pop").forEach(e=>e.remove());
 
   score=0; level=1; streak=0; maxStreak=0;
   multiplier=1; maxMulti=1; misses=cfg.startMisses||0; totalCaught=0; perfectRounds=0;
@@ -698,9 +702,11 @@ function startGame(){
   joyTouchId=null; joyTargetX=null; joyKnob.style.left="50%";
   updateRoundBar(); makeClouds(); applyTheme(1);
 
-  // Init rainbow trail dots on first play
+  // Init pooled effect dots on first play
   if(rainbowDots.length===0) initRainbowDots();
-  rainbowPositions=[]; hideRainbowDots();
+  if(tailDots.length===0) initTailDots();
+  rainbowPositions=[]; hideRainbowDots(); hideTailDots();
+  _rankTop=loadTop(difficulty);
 
   overlay.classList.add("hidden");
   quitBtn.classList.add("visible");
@@ -715,13 +721,15 @@ function startGame(){
 // ══════════════════════════════════════
 //  EVENT HANDLERS
 // ══════════════════════════════════════
-document.addEventListener("keydown", e=>{ keys[e.key]=true; });
+document.addEventListener("keydown", e=>{
+  keys[e.key]=true;
+  if(e.key==="Escape"&&playing) endGame();
+});
 document.addEventListener("keyup",   e=>{ keys[e.key]=false; });
 window.addEventListener("resize", refreshBounds);
 window.addEventListener("orientationchange", refreshBounds);
 document.addEventListener("touchstart", ()=>unlockAudio(), {once:true,passive:true});
 document.addEventListener("mousedown",  ()=>unlockAudio(), {once:true});
-document.addEventListener("keydown", e=>{ if(e.key==="Escape"&&playing) endGame(); });
 
 playBtn.addEventListener("click",    ()=>{ unlockAudio(); startGame(); });
 playBtn.addEventListener("touchend", e=>{ e.preventDefault(); unlockAudio(); startGame(); });

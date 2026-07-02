@@ -255,8 +255,3 @@ function applyTheme(lvl) {
   if (lvl > 1) showBanner(theme.name + " — Nivå " + lvl, "normal", 2000);
 }
 function resetTheme() { currentThemeIdx = -1; }
-
-// ── Power-up bar ──────────────────────────────────────────────────────────────
-function renderPowerupBar(activePowerups) {
-  // Managed externally via DOM elements stored in activePowerups entries
-}
