@@ -6,10 +6,10 @@ namespace UnicornGame {
 // ══════════════════════════════════════
 //  GAME MANAGER — port of public/js/game.js
 //
-//  Coordinate system: gameplay logic runs in "JS pixels" on a
-//  480-wide virtual playfield (identical numbers to the web game,
-//  so every tuning value carries over 1:1). PX converts to world
-//  units; y is measured downward from the top like in the DOM.
+//  Coordinate system: gameplay runs in "JS pixels" on the fixed
+//  480×854 portrait playfield (identical numbers to the web game, so
+//  every tuning value carries over 1:1). y is measured downward from
+//  the top like in the DOM. See Playfield.cs for the world mapping.
 // ══════════════════════════════════════
 public class GameManager : MonoBehaviour {
 
@@ -28,8 +28,10 @@ public class GameManager : MonoBehaviour {
     SynthAudio audioSys;
     FxPool fx;
     Hud hud;
+    Background bg;
     GameObject unicorn;
     SpriteRenderer unicornSr, ringSr;
+    Vector2Int lastScreen;
 
     // ── Game state (mirrors game.js) ───────────────────────────
     State state = State.Menu;
@@ -69,12 +71,10 @@ public class GameManager : MonoBehaviour {
     readonly List<Star> stars = new List<Star>();
     readonly List<float> pendingSpawns = new List<float>(); // delayed extra-spawn timers (ms)
 
-    // ── Coordinate helpers ─────────────────────────────────────
-    float W  => 2f * cam.orthographicSize * cam.aspect;   // world width
-    float H  => 2f * cam.orthographicSize;                // world height
-    float PX => W / 480f;                                 // world units per JS px
-    float JsH => H / PX;                                  // playfield height in JS px
-    Vector3 WorldFromJs(float xJs, float yJs) => new Vector3(xJs * PX - W / 2f, H / 2f - yJs * PX, 0);
+    // ── Coordinate helpers (fixed 480×854 field, see Playfield.cs) ──
+    const float JsW = Playfield.JsW;
+    const float JsH = Playfield.JsH;
+    static Vector3 WorldFromJs(float xJs, float yJs) => Playfield.FromJs(xJs, yJs);
 
     void Awake() {
         // Camera (created if the scene doesn't have one)
@@ -82,19 +82,20 @@ public class GameManager : MonoBehaviour {
         if (cam == null) {
             var cgo = new GameObject("Main Camera") { tag = "MainCamera" };
             cam = cgo.AddComponent<Camera>();
-            cgo.AddComponent<AudioListener>();
         }
         cam.orthographic = true;
-        cam.orthographicSize = 5f;
         cam.clearFlags = CameraClearFlags.SolidColor;
-        cam.backgroundColor = Config.GetTheme(1);
+        cam.backgroundColor = new Color(0.05f, 0f, 0.12f);   // letterbox colour
         cam.transform.position = new Vector3(0, 0, -10);
         if (cam.GetComponent<AudioListener>() == null) cam.gameObject.AddComponent<AudioListener>();
+        Playfield.FitCamera(cam);
+        lastScreen = new Vector2Int(Screen.width, Screen.height);
 
         audioSys = gameObject.AddComponent<SynthAudio>();
-        fx = new GameObject("FxPool").AddComponent<FxPool>();
+        bg  = new GameObject("Background").AddComponent<Background>();
+        fx  = new GameObject("FxPool").AddComponent<FxPool>();
         hud = new GameObject("Hud").AddComponent<Hud>();
-        hud.Init(cam);
+        hud.Init();
 
         // Unicorn + catch-radius ring
         unicorn = new GameObject("Unicorn");
@@ -106,7 +107,7 @@ public class GameManager : MonoBehaviour {
         ring.transform.SetParent(unicorn.transform, false);
         ringSr = ring.AddComponent<SpriteRenderer>();
         ringSr.sprite = SpriteFactory.Get("circle");
-        ringSr.color = new Color(1, 1, 1, 0.10f);
+        ringSr.color = new Color(1f, 1f, 1f, 0.09f);
         ringSr.sortingOrder = 5;
 
         ShowMenu();
@@ -117,14 +118,25 @@ public class GameManager : MonoBehaviour {
     // ══════════════════════════════════════
     void ShowMenu() {
         state = State.Menu;
-        hud.SetMenu("GRATTIS ELLIE!\n\nFånga stjärnorna!\n\n[B] eller vänster halva  =  Barn\n[V] eller höger halva  =  Vuxen\n\nStyr: piltangenter / A D / dra fingret\n[M] ljud på/av");
+        hud.SetPlayingVisible(false);
+        hud.SetMenu(
+            "GRATTIS PÅ FÖDELSEDAGEN\nELLIE!\n\n" +
+            "Fånga stjärnorna\noch samla poäng!\n\n" +
+            "[B]  eller vänster halva  =  Barn\n" +
+            "[V]  eller höger halva  =  Vuxen\n\n" +
+            "Styr med piltangenter, A / D\neller dra fingret\n\n" +
+            "[M] ljud på/av");
         unicorn.SetActive(false);
+        bg.SetBlackout(false);
+        bg.SetTheme(1);
         audioSys.StopMusic();
     }
 
     void ShowGameOver() {
         state = State.GameOver;
         unicorn.SetActive(false);
+        hud.SetPlayingVisible(false);
+        bg.SetBlackout(false);
         audioSys.StopMusic();
         audioSys.PlayGameOver();
 
@@ -132,14 +144,16 @@ public class GameManager : MonoBehaviour {
         int rank = top.FindIndex(e => e.name == playerName && e.score == score) + 1;
         var sb = new System.Text.StringBuilder();
         sb.AppendLine("SPELET SLUT!");
-        sb.AppendLine($"Poäng {score}   Plats {rank} ({cfg.Label})");
-        sb.AppendLine($"Fångade {totalCaught}   Streak {maxStreak}   x{maxMulti}   Perfekta {perfectRounds}");
         sb.AppendLine();
-        sb.AppendLine("- Topplista -");
+        sb.AppendLine($"{score} poäng  -  plats {rank} ({cfg.Label})");
+        sb.AppendLine($"Fångade {totalCaught}   Bästa streak {maxStreak}");
+        sb.AppendLine($"Högsta x{maxMulti}   Perfekta {perfectRounds}");
+        sb.AppendLine();
+        sb.AppendLine("- TOPPLISTA -");
         for (int i = 0; i < top.Count && i < 5; i++)
-            sb.AppendLine($"{i + 1}. {top[i].name}  {top[i].score}");
+            sb.AppendLine($"{i + 1}.  {top[i].name}   {top[i].score}");
         sb.AppendLine();
-        sb.AppendLine("[B] Barn   [V] Vuxen   - spela igen");
+        sb.AppendLine("[B] Barn      [V] Vuxen");
         hud.SetMenu(sb.ToString());
 
         if (ScoreApi.Enabled) {
@@ -175,19 +189,23 @@ public class GameManager : MonoBehaviour {
         rng.Reset();
         spawnTimerMs = GetSpawnInterval();
 
-        uxJs = 240f;
+        uxJs = JsW * 0.5f;
         unicorn.SetActive(true);
-        unicorn.transform.localScale = Vector3.one * ((vuxen ? 38f : 58f) * PX);
-        float ringScale = cfg.CatchRadius * 2f / (vuxen ? 38f : 58f); // ring child scales relative to parent
-        ringSr.transform.localScale = Vector3.one * ringScale;
+        float uniPx = vuxen ? 46f : 66f;
+        unicorn.transform.localScale = Vector3.one * (uniPx * Playfield.PX);
+        // ring is a child, so its world size = parent scale × this scale
+        ringSr.transform.localScale = Vector3.one * (cfg.CatchRadius * 2f / uniPx);
 
-        cam.backgroundColor = Config.GetTheme(1);
+        bg.SetBlackout(false);
+        bg.SetTheme(1);
         hud.SetMenu("");
+        hud.SetPlayingVisible(true);
         hud.Layout();
         hud.SetTop(0, 1, 0, 1);
         hud.SetHearts(misses, cfg.MaxMisses);
-        hud.SetSpeed(0);
-        hud.SetRound(0, 0, GetRoundSize(), 1);
+        hud.SetSpeed(0f);
+        hud.SetRound(0, 0, GetRoundSize());
+        hud.SetPowerups("");
 
         state = State.Playing;
         audioSys.PlayTune("birthday");
@@ -198,6 +216,13 @@ public class GameManager : MonoBehaviour {
     // ══════════════════════════════════════
     void Update() {
         if (Input.GetKeyDown(KeyCode.M)) audioSys.ToggleSound();
+
+        // Re-fit the letterbox when the window changes shape
+        if (Screen.width != lastScreen.x || Screen.height != lastScreen.y) {
+            lastScreen = new Vector2Int(Screen.width, Screen.height);
+            Playfield.FitCamera(cam);
+            hud.Layout();
+        }
 
         switch (state) {
             case State.Menu:
@@ -231,13 +256,15 @@ public class GameManager : MonoBehaviour {
         bool goR = Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D);
         if (mirror) { var t = goL; goL = goR; goR = t; }
         if (goL) uxJs = Mathf.Max(36f, uxJs - spd);
-        if (goR) uxJs = Mathf.Min(480f - 36f, uxJs + spd);
+        if (goR) uxJs = Mathf.Min(JsW - 36f, uxJs + spd);
 
-        // touch / mouse drag: unicorn follows finger x
+        // touch / mouse drag: unicorn follows the pointer, mapped through
+        // the letterbox so it lines up with the playfield, not the window
         if (Input.GetMouseButton(0)) {
-            float fx01 = Input.mousePosition.x / Screen.width;
-            if (mirror) fx01 = 1f - fx01;
-            uxJs = Mathf.Clamp(fx01 * 480f, 36f, 480f - 36f);
+            var wp = cam.ScreenToWorldPoint(Input.mousePosition);
+            float px = (wp.x + Playfield.W * 0.5f) / Playfield.PX;   // → JS px
+            if (mirror) px = JsW - px;
+            uxJs = Mathf.Clamp(px, 36f, JsW - 36f);
         }
 
         float uyJs = JsH * 0.70f;
@@ -297,7 +324,7 @@ public class GameManager : MonoBehaviour {
 
             if (s.zig) {
                 s.zigPhase += dtMs * s.zigFreq;
-                s.xJs = Mathf.Clamp(s.zigBaseX + Mathf.Sin(s.zigPhase) * s.zigAmp, 24f, 480f - 24f);
+                s.xJs = Mathf.Clamp(s.zigBaseX + Mathf.Sin(s.zigPhase) * s.zigAmp, 24f, JsW - 24f);
             }
 
             ApplyMagnet(s, dt);
@@ -347,6 +374,18 @@ public class GameManager : MonoBehaviour {
 
         hud.SetTop(score, level, streak, multiplier);
         hud.SetSpeed((currentSpeed - cfg.BaseSpeed) / (cfg.MaxSpeed - cfg.BaseSpeed));
+
+        // active power-up readout
+        if (powerups.Count == 0) hud.SetPowerups("");
+        else {
+            var sb = new System.Text.StringBuilder();
+            foreach (var kv in powerups) {
+                if (sb.Length > 0) sb.Append("     ");
+                sb.Append(Config.PowerupLabel(kv.Key)).Append(' ')
+                  .Append(Mathf.CeilToInt(kv.Value)).Append('s');
+            }
+            hud.SetPowerups(sb.ToString());
+        }
     }
 
     // ══════════════════════════════════════
@@ -389,7 +428,7 @@ public class GameManager : MonoBehaviour {
         }
 
         float size = def.Size + (kind == SpriteKind.Good && activeChallenge != null ? activeChallenge.SizeBoost : 0f);
-        float x = 28f + Random.value * (480f - 60f);
+        float x = 28f + Random.value * (JsW - 60f);
         MakeStar(def, kind, x, size, currentSpeed + (Random.value * 0.3f - 0.15f), null);
     }
 
@@ -400,7 +439,7 @@ public class GameManager : MonoBehaviour {
             if (!p.VuxenOnly || isVuxen) avail.Add(p);
         if (avail.Count == 0) return;
         var pu = avail[Random.Range(0, avail.Count)];
-        float x = 28f + Random.value * (480f - 60f);
+        float x = 28f + Random.value * (JsW - 60f);
         var s = MakeStar(new SpriteDef("bolt", 0, 40, pu.Color), SpriteKind.Powerup, x, 40f, currentSpeed * 0.7f, pu);
         s.sr.color = pu.Color;
     }
@@ -409,7 +448,7 @@ public class GameManager : MonoBehaviour {
         if (state != State.Playing || crownActive) return;
         crownActive = true;
         var def = isVuxen ? Config.CrownVuxen : Config.CrownBarn;
-        float baseX = 100f + Random.value * (480f - 200f);
+        float baseX = 100f + Random.value * (JsW - 200f);
         var s = MakeStar(def, SpriteKind.Good, baseX, def.Size, currentSpeed * (isVuxen ? 0.8f : 0.65f), null);
         s.zig = true;
         s.zigBaseX = baseX;
@@ -423,9 +462,9 @@ public class GameManager : MonoBehaviour {
         var go = new GameObject("star");
         var sr = go.AddComponent<SpriteRenderer>();
         sr.sprite = SpriteFactory.Get(def.Shape);
-        sr.color = def.Color;
+        sr.color = SpriteFactory.IsPreColoured(def.Shape) ? Color.white : def.Color;
         sr.sortingOrder = 8;
-        go.transform.localScale = Vector3.one * (sizePx * PX);
+        go.transform.localScale = Vector3.one * (sizePx * Playfield.PX);
         var s = new Star { go = go, sr = sr, def = def, kind = kind, pu = pu, xJs = xJs, yJs = -55f, speed = speed };
         go.transform.position = WorldFromJs(xJs, s.yJs);
         stars.Add(s);
@@ -487,7 +526,7 @@ public class GameManager : MonoBehaviour {
         else if (streak == mt[2] || streak == mt[3] || streak == mt[4] || streak == mt[5]) audioSys.PlayWow();
         audioSys.PlayCatch(1f + streak * 0.006f);
 
-        hud.SetRound(roundCaught, roundMissed, GetRoundSize(), roundNum);
+        hud.SetRound(roundCaught, roundMissed, GetRoundSize());
         CheckRoundEnd();
         if (totalCaught >= nextChallengeAt && activeChallenge == null) ActivateChallenge();
     }
@@ -495,7 +534,7 @@ public class GameManager : MonoBehaviour {
     void OnMiss() {
         // Missing a sprite has no penalty — only catching bad sprites costs anything.
         roundMissed++; totalCaught++;
-        hud.SetRound(roundCaught, roundMissed, GetRoundSize(), roundNum);
+        hud.SetRound(roundCaught, roundMissed, GetRoundSize());
         CheckRoundEnd();
         audioSys.PlayMiss();
     }
@@ -540,12 +579,12 @@ public class GameManager : MonoBehaviour {
             audioSys.PlayPerfect();
             hud.ShowBanner($"PERFEKT omgång {roundNum}!  +{bonus}p", 2.8f);
             for (int i = 0; i < 3; i++)
-                fx.Burst(WorldFromJs(100f + Random.value * 280f, JsH * 0.3f), 12, 0.16f);
+                fx.Burst(WorldFromJs(80f + Random.value * (JsW - 160f), JsH * 0.28f), 12, 0.16f);
         } else {
             hud.ShowBanner($"Omgång {roundNum}: {roundCaught}/{rs}", 1.8f);
         }
         roundNum++; roundCaught = 0; roundMissed = 0;
-        hud.SetRound(0, 0, GetRoundSize(), roundNum);
+        hud.SetRound(0, 0, GetRoundSize());
     }
 
     // ══════════════════════════════════════
@@ -573,7 +612,7 @@ public class GameManager : MonoBehaviour {
         hud.FlashCentre("BONUSRUNDA!\n" + c.Label, 1.8f);
         audioSys.PlayWow();
         audioSys.PlayTune(c.Music);
-        if (c.Blackout) cam.backgroundColor = new Color(0.01f, 0f, 0.05f);
+        if (c.Blackout) bg.SetBlackout(true);
 
         challengeTimeLeft = c.MeteorMode
             ? (isVuxen ? 10f : 8f)
@@ -586,7 +625,7 @@ public class GameManager : MonoBehaviour {
         bool survived = activeChallenge.MeteorMode && meteorHits == 0;
         bool wasBlackout = activeChallenge.Blackout;
         activeChallenge = null;
-        if (wasBlackout) cam.backgroundColor = Config.GetTheme(level);
+        if (wasBlackout) bg.SetBlackout(false);
         if (survived) {
             int bonus = (isVuxen ? 40 : 25) + level * 2;
             score += bonus;
@@ -648,8 +687,7 @@ public class GameManager : MonoBehaviour {
     // ══════════════════════════════════════
     void DoLevelUp() {
         audioSys.PlayLevelUp();
-        if (activeChallenge == null || !activeChallenge.Blackout)
-            cam.backgroundColor = Config.GetTheme(level);
+        bg.SetTheme(level);
         hud.ShowBanner($"Nivå {level}!", 2f);
         // music keeps playing — party tune survives level-ups (AudioSource loops)
     }

@@ -25,7 +25,11 @@ as the web version.
 2. In Unity Hub: **Add → Add project from disk** → select
    `unity/UnicornGame`.
 3. Open the project and press **Play**. The game boots into the menu.
-4. For the right phone feel, set the Game view aspect to **9:16 Portrait**.
+
+The playfield is a fixed **480×854 portrait field** that is letterboxed to
+fit any window, so proportions are correct whatever aspect the Game view is
+set to. For the nicest fit (no side bars) pick a portrait aspect such as
+**9:16** in the Game view dropdown.
 
 ## Controls
 
@@ -80,12 +84,14 @@ nothing else in the code needs to change. Kenney.nl has fitting CC0 packs.
 ```
 unity/UnicornGame/
 ├── Assets/Scripts/
+│   ├── Playfield.cs      ← fixed 480×854 portrait field + camera letterboxing
 │   ├── GameConfig.cs     ← config.js port (difficulties, sprites, challenges, curves)
 │   ├── GameManager.cs    ← game.js port (state machine, spawning, catches, challenges)
-│   ├── SpriteFactory.cs  ← procedural shape textures
+│   ├── SpriteFactory.cs  ← procedural, antialiased shape textures
+│   ├── Background.cs     ← gradient sky per level, twinkling stars, hills
 │   ├── SynthAudio.cs     ← audio.js port (synth SFX + tunes)
 │   ├── FxPool.cs         ← pooled particles (bursts, sparkle tails, rainbow trail)
-│   ├── Hud.cs            ← code-built HUD (TextMesh + sprite bars)
+│   ├── Hud.cs            ← code-built HUD (self-measuring text + sprite bars)
 │   └── ScoreApi.cs       ← api.js port (UnityWebRequest → Express backend)
 ├── Packages/manifest.json
 └── ProjectSettings/ProjectVersion.txt

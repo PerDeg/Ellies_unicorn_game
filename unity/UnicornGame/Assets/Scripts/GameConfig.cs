@@ -4,8 +4,8 @@ namespace UnicornGame {
 
 // ══════════════════════════════════════
 //  CONFIG — 1:1 port of public/js/config.js
-//  All sizes/speeds are in "JS pixels" (480-wide playfield);
-//  GameManager converts to world units via its PX factor.
+//  All sizes/speeds are in "JS pixels" on the fixed 480×854 playfield;
+//  Playfield.cs converts those to world units.
 // ══════════════════════════════════════
 
 public enum SpriteKind { Good, Bad, Life, Powerup }
@@ -126,20 +126,11 @@ public static class Config {
         new ChallengeDef { Id = "blackout", Label = "Mörkerläge!",                  Music = "challenge", Blackout = true },
     };
 
-    // ── Level themes (camera background colours) ───────────────
-    public static readonly Color[] ThemeColors = {
-        new Color(0.16f, 0.06f, 0.45f), // night
-        new Color(0.35f, 0.10f, 0.40f), // dawn
-        new Color(0.10f, 0.45f, 0.75f), // day
-        new Color(0.45f, 0.20f, 0.10f), // sunset
-        new Color(0.03f, 0.01f, 0.13f), // space
-    };
-    public static Color GetTheme(int lvl) {
-        if (lvl <= 2) return ThemeColors[0];
-        if (lvl <= 4) return ThemeColors[1];
-        if (lvl <= 6) return ThemeColors[2];
-        if (lvl <= 8) return ThemeColors[3];
-        return ThemeColors[4];
+    // Level themes live in Background.cs (gradient stops per level band).
+
+    public static string PowerupLabel(string id) {
+        foreach (var p in Powerups) if (p.Id == id) return p.Label;
+        return id;
     }
 
     // ── Spawn rate curves — identical maths to config.js ──────
