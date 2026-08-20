@@ -72,6 +72,28 @@ to play fully offline.
 3. Copy the build output into `public/unity/` on the server and it will be
    served at `http://<server>:3000/unity/` alongside the original game.
 
+## Visual grammar
+
+Sprites are designed so a player can read the board instantly — shape,
+colour, outline and effect all encode the same message redundantly:
+
+| Category | Shape | Fill | Contour | Effect |
+|---|---|---|---|---|
+| Catch (points) | star / 4-point sparkle | warm gold-yellow | dark navy | bright ribbon trail, glow halo, slow spin |
+| Danger | skull / crescent | bone white / near-black | **red** | dark smoke trail, pulsing red aura, wobble |
+| Extra life | heart | green / pink | dark navy | matching glow, sparkle burst |
+| Power-up | magnet, hourglass, rainbow arc | own colour each | dark navy | coloured glow |
+
+Every falling sprite gets a baked contour outline, which is what makes it
+legible against both the bright day themes and the dark space theme.
+
+## Effects
+
+Uses real Unity systems rather than hand-rolled quads: `ParticleSystem`
+for confetti, sparkles, smoke and ambient motes; `TrailRenderer` for the
+falling-sprite ribbons and the unicorn's tail; plus camera shake and a
+full-field colour flash on hits, perfect rounds and challenge starts.
+
 ## Swapping in real art
 
 `SpriteFactory.cs` returns a `Sprite` per shape name ("star", "skull",

@@ -26,11 +26,12 @@ public class GameManager : MonoBehaviour {
     // ── Unity objects ──────────────────────────────────────────
     Camera cam;
     SynthAudio audioSys;
-    FxPool fx;
+    Fx fx;
     Hud hud;
     Background bg;
     GameObject unicorn;
-    SpriteRenderer unicornSr, ringSr;
+    SpriteRenderer unicornSr, ringSr, uniGlowSr;
+    TrailRenderer uniTrail;
     Vector2Int lastScreen;
 
     // ── Game state (mirrors game.js) ───────────────────────────
@@ -67,6 +68,11 @@ public class GameManager : MonoBehaviour {
         public PowerupDef pu;
         public float xJs, yJs, speed, trailEmit, glitterT;
         public float zigBaseX, zigPhase, zigAmp, zigFreq; public bool zig;
+        public Transform glow;          // halo / danger aura
+        public SpriteRenderer glowSr;
+        public GameObject trailGo;      // detached on death so it can fade out
+        public TrailRenderer trail;
+        public float spin, worldSize;
     }
     readonly List<Star> stars = new List<Star>();
     readonly List<float> pendingSpawns = new List<float>(); // delayed extra-spawn timers (ms)
@@ -93,7 +99,8 @@ public class GameManager : MonoBehaviour {
 
         audioSys = gameObject.AddComponent<SynthAudio>();
         bg  = new GameObject("Background").AddComponent<Background>();
-        fx  = new GameObject("FxPool").AddComponent<FxPool>();
+        fx  = new GameObject("Fx").AddComponent<Fx>();
+        fx.Init(cam);
         hud = new GameObject("Hud").AddComponent<Hud>();
         hud.Init();
 
@@ -109,6 +116,27 @@ public class GameManager : MonoBehaviour {
         ringSr.sprite = SpriteFactory.Get("circle");
         ringSr.color = new Color(1f, 1f, 1f, 0.09f);
         ringSr.sortingOrder = 5;
+
+        // Soft aura around the unicorn
+        var uglow = new GameObject("UniGlow");
+        uglow.transform.SetParent(unicorn.transform, false);
+        uniGlowSr = uglow.AddComponent<SpriteRenderer>();
+        uniGlowSr.sprite = SpriteFactory.Get("glow");
+        uniGlowSr.color = new Color(1f, 0.8f, 1f, 0.30f);
+        uniGlowSr.sortingOrder = 6;
+        uglow.transform.localScale = Vector3.one * 1.7f;
+
+        // Ribbon trail that follows the unicorn as it runs
+        var utrail = new GameObject("UniTrail");
+        utrail.transform.SetParent(unicorn.transform, false);
+        uniTrail = utrail.AddComponent<TrailRenderer>();
+        uniTrail.material = Fx.SpriteMaterial(SpriteFactory.GetTexture("glow"));
+        uniTrail.sortingOrder = 9;
+        uniTrail.numCapVertices = 4;
+        uniTrail.minVertexDistance = 0.02f;
+        uniTrail.time = 0.35f;
+        uniTrail.startWidth = 0.30f;
+        uniTrail.endWidth = 0f;
 
         ShowMenu();
     }
@@ -172,7 +200,7 @@ public class GameManager : MonoBehaviour {
         isVuxen = vuxen;
         cfg = vuxen ? Config.Vuxen : Config.Barn;
 
-        foreach (var s in stars) Destroy(s.go);
+        foreach (var s in stars) ReleaseStar(s);
         stars.Clear();
         pendingSpawns.Clear();
         powerups.Clear();
@@ -271,6 +299,20 @@ public class GameManager : MonoBehaviour {
         unicorn.transform.position = WorldFromJs(uxJs, uyJs);
         unicornSr.flipX = mirror;
 
+        // Trail + aura react to the active power-up
+        Color aura;
+        if (powerups.ContainsKey("rainbow")) aura = Color.HSVToRGB((Time.time * 1.2f) % 1f, 0.75f, 1f);
+        else if (powerups.ContainsKey("magnet")) aura = new Color(0.4f, 0.91f, 0.98f);
+        else if (powerups.ContainsKey("slowmo")) aura = new Color(0.77f, 0.71f, 0.99f);
+        else aura = new Color(1f, 0.72f, 0.95f);
+        bool boosted = powerups.Count > 0;
+        uniTrail.startColor = new Color(aura.r, aura.g, aura.b, boosted ? 0.75f : 0.40f);
+        uniTrail.endColor   = new Color(aura.r, aura.g, aura.b, 0f);
+        uniTrail.startWidth = boosted ? 0.42f : 0.26f;
+        float uniPulse = 0.5f + 0.5f * Mathf.Sin(Time.time * 5f);
+        uniGlowSr.color = new Color(aura.r, aura.g, aura.b,
+            (boosted ? 0.34f : 0.20f) + 0.14f * uniPulse);
+
         // ── Powerup timers (stacking handled at catch) ─────────
         var expired = new List<string>();
         var keys = new List<string>(powerups.Keys);
@@ -288,8 +330,8 @@ public class GameManager : MonoBehaviour {
             rainbowFxTimer += dt;
             if (rainbowFxTimer > 0.03f) {
                 rainbowFxTimer = 0;
-                var col = FxPool.RainbowColors[Random.Range(0, FxPool.RainbowColors.Length)];
-                fx.Spawn(WorldFromJs(uxJs, uyJs), col, 0.35f, 0.35f, Vector2.zero);
+                var col = Fx.RainbowColors[Random.Range(0, Fx.RainbowColors.Length)];
+                fx.Sparkle(WorldFromJs(uxJs, uyJs), col, 2, 0.8f);
             }
         }
 
@@ -330,25 +372,44 @@ public class GameManager : MonoBehaviour {
             ApplyMagnet(s, dt);
             s.go.transform.position = WorldFromJs(s.xJs, s.yJs);
 
-            // visual pulses: party glitter, skull danger, moon evil
-            if (activeChallenge != null && activeChallenge.PartyMode && s.kind == SpriteKind.Good) {
-                s.glitterT += dt * 6f;
-                s.sr.color = Color.HSVToRGB(s.glitterT % 1f, 0.7f, 1f);
-            } else if (s.kind == SpriteKind.Bad) {
-                s.glitterT += dt * (s.def.TakesLife ? 8f : 4f);
-                float pulse = (Mathf.Sin(s.glitterT * Mathf.PI) + 1f) / 2f;
-                s.sr.color = s.def.TakesLife
-                    ? Color.Lerp(s.def.Color, new Color(1f, 0.2f, 0.2f), pulse)
-                    : Color.Lerp(s.def.Color, new Color(0.5f, 0.1f, 0.3f), pulse);
-            }
+            s.glitterT += dt;
 
-            // sparkle tail for plain good stars
-            if (s.kind == SpriteKind.Good && (activeChallenge == null || !activeChallenge.PartyMode) && s.yJs > 0) {
-                s.trailEmit += dtMs;
-                if (s.trailEmit > 60f) {
-                    s.trailEmit = 0;
-                    var col = FxPool.TrailColors[Random.Range(0, FxPool.TrailColors.Length)];
-                    fx.Spawn(WorldFromJs(s.xJs, s.yJs), col, 0.10f, 0.4f, Vector2.zero);
+            if (s.kind == SpriteKind.Bad) {
+                // Dangers: pulsing red aura, menacing wobble, smoke trail
+                float pulse = 0.5f + 0.5f * Mathf.Sin(s.glitterT * (s.def.TakesLife ? 9f : 5f));
+                s.glowSr.color = new Color(1f, 0.10f, 0.10f, 0.30f + 0.35f * pulse);
+                s.glow.localScale = Vector3.one * (2.2f + 0.45f * pulse);
+                s.go.transform.rotation = Quaternion.Euler(0f, 0f, Mathf.Sin(s.glitterT * 3f) * 9f);
+                if (s.yJs > 0f) {
+                    s.trailEmit += dtMs;
+                    if (s.trailEmit > 110f) {
+                        s.trailEmit = 0f;
+                        fx.Smoke(s.go.transform.position, 1, 0.25f, s.worldSize * 0.75f);
+                    }
+                }
+            } else {
+                // Catchables: slow spin, breathing halo, occasional glint
+                if (s.spin != 0f)
+                    s.go.transform.rotation = Quaternion.Euler(0f, 0f, s.glitterT * s.spin);
+
+                Color baseCol = s.def.Color;
+                if (activeChallenge != null && activeChallenge.PartyMode) {
+                    baseCol = Color.HSVToRGB((s.glitterT * 0.8f) % 1f, 0.65f, 1f);
+                    if (!SpriteFactory.IsPreColoured(s.def.Shape)) s.sr.color = baseCol;
+                }
+                float breathe = 0.5f + 0.5f * Mathf.Sin(s.glitterT * 4f);
+                s.glowSr.color = new Color(baseCol.r, baseCol.g, baseCol.b, 0.38f + 0.26f * breathe);
+                s.glow.localScale = Vector3.one * (1.9f + 0.30f * breathe);
+                if (s.trail != null) {
+                    s.trail.startColor = new Color(baseCol.r, baseCol.g, baseCol.b, 0.70f);
+                    s.trail.endColor   = new Color(baseCol.r, baseCol.g, baseCol.b, 0f);
+                }
+                if (s.yJs > 0f) {
+                    s.trailEmit += dtMs;
+                    if (s.trailEmit > 150f) {
+                        s.trailEmit = 0f;
+                        fx.Sparkle(s.go.transform.position, baseCol, 1, 0.5f);
+                    }
                 }
             }
 
@@ -357,18 +418,18 @@ public class GameManager : MonoBehaviour {
             if (caught) {
                 if (s.def.Crown) crownActive = false;
                 Vector3 pos = s.go.transform.position;
-                Destroy(s.go); stars.RemoveAt(i);
+                ReleaseStar(s); stars.RemoveAt(i);
                 switch (s.kind) {
                     case SpriteKind.Bad:     OnBadCatch(s.def, pos); break;
                     case SpriteKind.Life:    OnLifeCatch(pos); break;
-                    case SpriteKind.Powerup: ActivatePowerup(s.pu); fx.Burst(pos, 8); break;
+                    case SpriteKind.Powerup: ActivatePowerup(s.pu); fx.Confetti(pos, s.pu.Color, 16, 2.6f); fx.Sparkle(pos, s.pu.Color, 14, 1.8f); break;
                     default:                 OnCatch(s.def, pos); break;
                 }
                 if (state != State.Playing) return; // game may have ended
             } else if (s.yJs > JsH + 50f) {
-                Destroy(s.go); stars.RemoveAt(i);
+                ReleaseStar(s); stars.RemoveAt(i);
                 if (s.def.Crown) crownActive = false;      // escaped crown ≠ round miss
-                else if (s.kind == SpriteKind.Good) OnMiss();
+                else if (s.kind == SpriteKind.Good) OnMiss(s.xJs);
             }
         }
 
@@ -440,8 +501,7 @@ public class GameManager : MonoBehaviour {
         if (avail.Count == 0) return;
         var pu = avail[Random.Range(0, avail.Count)];
         float x = 28f + Random.value * (JsW - 60f);
-        var s = MakeStar(new SpriteDef("bolt", 0, 40, pu.Color), SpriteKind.Powerup, x, 40f, currentSpeed * 0.7f, pu);
-        s.sr.color = pu.Color;
+        MakeStar(new SpriteDef(pu.Shape, 0, 46, pu.Color), SpriteKind.Powerup, x, 46f, currentSpeed * 0.7f, pu);
     }
 
     void SpawnCrown() {
@@ -464,11 +524,57 @@ public class GameManager : MonoBehaviour {
         sr.sprite = SpriteFactory.Get(def.Shape);
         sr.color = SpriteFactory.IsPreColoured(def.Shape) ? Color.white : def.Color;
         sr.sortingOrder = 8;
-        go.transform.localScale = Vector3.one * (sizePx * Playfield.PX);
-        var s = new Star { go = go, sr = sr, def = def, kind = kind, pu = pu, xJs = xJs, yJs = -55f, speed = speed };
+        float world = sizePx * Playfield.PX;
+        go.transform.localScale = Vector3.one * world;
+
+        var s = new Star {
+            go = go, sr = sr, def = def, kind = kind, pu = pu,
+            xJs = xJs, yJs = -55f, speed = speed, worldSize = world,
+            spin = kind == SpriteKind.Good ? Random.Range(-40f, 40f) : 0f,
+        };
+
+        bool danger = kind == SpriteKind.Bad;
+
+        // ── Halo: catchables glow warm, dangers pulse red ──────
+        var g = new GameObject("glow");
+        g.transform.SetParent(go.transform, false);
+        var gsr = g.AddComponent<SpriteRenderer>();
+        gsr.sprite = SpriteFactory.Get("glow");
+        gsr.sortingOrder = 7;
+        Color halo = danger ? new Color(1f, 0.12f, 0.12f)
+                            : (SpriteFactory.IsPreColoured(def.Shape) ? new Color(1f, 0.92f, 0.6f) : def.Color);
+        gsr.color = new Color(halo.r, halo.g, halo.b, danger ? 0.42f : 0.5f);
+        g.transform.localScale = Vector3.one * (danger ? 2.3f : 2.0f);
+        s.glow = g.transform; s.glowSr = gsr;
+
+        // ── Trail: bright ribbon for catchables, smoke for dangers ──
+        var tgo = new GameObject("trail");
+        tgo.transform.SetParent(go.transform, false);
+        var tr = tgo.AddComponent<TrailRenderer>();
+        tr.material = Fx.SpriteMaterial(SpriteFactory.GetTexture("glow"));
+        tr.sortingOrder = 6;
+        tr.numCapVertices = 4;
+        tr.minVertexDistance = 0.02f;
+        tr.time = danger ? 0.45f : 0.30f;
+        tr.startWidth = world * (danger ? 0.85f : 0.55f);
+        tr.endWidth = 0f;
+        Color tc = danger ? new Color(0.25f, 0.10f, 0.28f) : halo;
+        tr.startColor = new Color(tc.r, tc.g, tc.b, danger ? 0.55f : 0.70f);
+        tr.endColor = new Color(tc.r, tc.g, tc.b, 0f);
+        s.trailGo = tgo; s.trail = tr;
+
         go.transform.position = WorldFromJs(xJs, s.yJs);
         stars.Add(s);
         return s;
+    }
+
+    /// Cuts the trail loose so it fades out instead of vanishing with the sprite.
+    void ReleaseStar(Star s) {
+        if (s.trailGo != null) {
+            s.trailGo.transform.SetParent(null, true);
+            Destroy(s.trailGo, s.trail != null ? s.trail.time + 0.1f : 0.5f);
+        }
+        Destroy(s.go);
     }
 
     void SpawnWave() {
@@ -514,9 +620,12 @@ public class GameManager : MonoBehaviour {
         int nl = 1 + totalCaught / 10;
         if (nl > level) { level = nl; DoLevelUp(); }
 
-        fx.Burst(pos, 10);
+        fx.Confetti(pos, def.Color, 14);
+        fx.Sparkle(pos, def.Color, 8);
         if (def.Crown) {
-            fx.Burst(pos, 16, 0.18f);
+            fx.Confetti(pos, new Color(1f, 0.84f, 0.2f), 30, 3.2f);
+            fx.Sparkle(pos, Color.white, 20, 2.4f);
+            fx.Flash(new Color(1f, 0.85f, 0.3f), 0.35f);
             audioSys.PlayWow();
             hud.ShowBanner($"GYLLENE STJÄRNAN! +{pts}p", 2.2f);
         }
@@ -531,8 +640,9 @@ public class GameManager : MonoBehaviour {
         if (totalCaught >= nextChallengeAt && activeChallenge == null) ActivateChallenge();
     }
 
-    void OnMiss() {
+    void OnMiss(float xJs) {
         // Missing a sprite has no penalty — only catching bad sprites costs anything.
+        fx.Smoke(WorldFromJs(xJs, JsH - 20f), 4, 0.5f, 0.20f);
         roundMissed++; totalCaught++;
         hud.SetRound(roundCaught, roundMissed, GetRoundSize());
         CheckRoundEnd();
@@ -549,13 +659,18 @@ public class GameManager : MonoBehaviour {
             audioSys.PlayBadCatch(true);
             hud.ShowBanner("DÖSKALLE!  -1 liv, streak bruten!", 2f);
             hud.FlashCentre("-1 LIV!", 1.2f);
-            fx.Burst(pos, 12, 0.16f);
+            fx.Smoke(pos, 16, 1.6f, 0.42f);
+            fx.Confetti(pos, new Color(0.9f, 0.15f, 0.2f), 10, 2.6f);
+            fx.Shake(0.30f);
+            fx.Flash(new Color(1f, 0f, 0.05f), 0.55f);
             if (misses >= cfg.MaxMisses) { EndGame(); return; }
         } else {
             audioSys.PlayBadCatch(false);
             score = Mathf.Max(0, score + def.Pts);
             hud.ShowBanner($"MÅNE  {def.Pts}p, streak bruten!", 1.4f);
-            fx.Burst(pos, 8, 0.14f);
+            fx.Smoke(pos, 10, 1.2f, 0.34f);
+            fx.Shake(0.16f);
+            fx.Flash(new Color(0.8f, 0f, 0.35f), 0.3f);
         }
     }
 
@@ -563,7 +678,9 @@ public class GameManager : MonoBehaviour {
         if (misses > 0) { misses--; hud.SetHearts(misses, cfg.MaxMisses); }
         audioSys.PlayMultiUp();
         hud.ShowBanner("+1 LIV!", 1.5f);
-        fx.Burst(pos, 10);
+        fx.Sparkle(pos, new Color(0.4f, 1f, 0.6f), 18, 1.8f);
+        fx.Confetti(pos, new Color(0.4f, 1f, 0.6f), 10);
+        fx.Flash(new Color(0.3f, 1f, 0.5f), 0.18f);
     }
 
     // ══════════════════════════════════════
@@ -578,8 +695,12 @@ public class GameManager : MonoBehaviour {
             score += bonus;
             audioSys.PlayPerfect();
             hud.ShowBanner($"PERFEKT omgång {roundNum}!  +{bonus}p", 2.8f);
-            for (int i = 0; i < 3; i++)
-                fx.Burst(WorldFromJs(80f + Random.value * (JsW - 160f), JsH * 0.28f), 12, 0.16f);
+            for (int i = 0; i < 4; i++) {
+                var p = WorldFromJs(70f + Random.value * (JsW - 140f), JsH * (0.18f + Random.value * 0.22f));
+                fx.Confetti(p, Fx.TrailColors[Random.Range(0, Fx.TrailColors.Length)], 22, 3f);
+                fx.Sparkle(p, Color.white, 12, 2f);
+            }
+            fx.Flash(new Color(1f, 0.9f, 0.4f), 0.22f);
         } else {
             hud.ShowBanner($"Omgång {roundNum}: {roundCaught}/{rs}", 1.8f);
         }
@@ -612,6 +733,10 @@ public class GameManager : MonoBehaviour {
         hud.FlashCentre("BONUSRUNDA!\n" + c.Label, 1.8f);
         audioSys.PlayWow();
         audioSys.PlayTune(c.Music);
+        fx.Flash(c.MeteorMode ? new Color(1f, 0.2f, 0.2f) : new Color(0.7f, 0.5f, 1f), 0.3f);
+        for (int i = 0; i < 6; i++)
+            fx.Confetti(WorldFromJs(60f + Random.value * (JsW - 120f), JsH * 0.25f),
+                        Fx.TrailColors[Random.Range(0, Fx.TrailColors.Length)], 12, 2.6f);
         if (c.Blackout) bg.SetBlackout(true);
 
         challengeTimeLeft = c.MeteorMode
@@ -631,6 +756,8 @@ public class GameManager : MonoBehaviour {
             score += bonus;
             audioSys.PlayPerfect();
             hud.ShowBanner($"ÖVERLEVDE METEORREGNET! +{bonus}p", 2.6f);
+            for (int i = 0; i < 3; i++)
+                fx.Confetti(WorldFromJs(80f + Random.value * (JsW - 160f), JsH * 0.3f), Color.white, 20, 3f);
         }
         audioSys.PlayTune("birthday");
     }
@@ -688,13 +815,16 @@ public class GameManager : MonoBehaviour {
     void DoLevelUp() {
         audioSys.PlayLevelUp();
         bg.SetTheme(level);
+        for (int i = 0; i < 10; i++)
+            fx.Sparkle(WorldFromJs(Random.value * JsW, Random.value * JsH * 0.8f),
+                       Fx.TrailColors[Random.Range(0, Fx.TrailColors.Length)], 2, 1.2f);
         hud.ShowBanner($"Nivå {level}!", 2f);
         // music keeps playing — party tune survives level-ups (AudioSource loops)
     }
 
     void EndGame() {
         if (state != State.Playing) return;
-        foreach (var s in stars) Destroy(s.go);
+        foreach (var s in stars) ReleaseStar(s);
         stars.Clear();
         pendingSpawns.Clear();
         powerups.Clear();

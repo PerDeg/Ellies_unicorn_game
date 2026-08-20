@@ -34,12 +34,12 @@ public class SpriteDef {
 }
 
 public class PowerupDef {
-    public string Id, Label;
+    public string Id, Label, Shape;
     public float DurSec;
     public Color Color;
     public bool VuxenOnly;
-    public PowerupDef(string id, string label, float durSec, Color color, bool vuxenOnly = false) {
-        Id = id; Label = label; DurSec = durSec; Color = color; VuxenOnly = vuxenOnly;
+    public PowerupDef(string id, string label, string shape, float durSec, Color color, bool vuxenOnly = false) {
+        Id = id; Label = label; Shape = shape; DurSec = durSec; Color = color; VuxenOnly = vuxenOnly;
     }
 }
 
@@ -69,42 +69,49 @@ public static class Config {
     };
 
     // ── Sprite types ──────────────────────────────────────────
+    // Catchables are ALL from the star family in warm, bright colours —
+    // shape and hue together say "grab me" at a glance.
     public static readonly SpriteDef[] StarTypes = {
-        new SpriteDef("star",   5, 38, new Color(1.00f, 0.88f, 0.40f)),
-        new SpriteDef("star",   5, 36, new Color(0.75f, 0.90f, 1.00f)),
-        new SpriteDef("circle", 5, 40, new Color(1.00f, 0.62f, 0.89f)),
-        new SpriteDef("star",   5, 42, new Color(1.00f, 0.80f, 0.20f)),
-        new SpriteDef("star",   5, 38, new Color(1.00f, 1.00f, 0.85f)),
+        new SpriteDef("star",     5, 40, new Color(1.00f, 0.84f, 0.24f)),
+        new SpriteDef("sparkle4", 5, 38, new Color(1.00f, 0.97f, 0.78f)),
+        new SpriteDef("star",     5, 42, new Color(1.00f, 0.70f, 0.22f)),
+        new SpriteDef("sparkle4", 5, 40, new Color(1.00f, 0.90f, 0.45f)),
+        new SpriteDef("star",     5, 44, new Color(1.00f, 0.80f, 0.10f)),
     };
     public static readonly int[] StarWeights = { 40, 25, 18, 12, 5 };
 
-    public static readonly SpriteDef Skull = new SpriteDef("skull", 0,   36, new Color(0.92f, 0.92f, 0.92f), takesLife: true);
-    public static readonly SpriteDef Moon  = new SpriteDef("crescent", -15, 38, new Color(0.35f, 0.30f, 0.52f));
+    // Dangers: bone-white skull and a near-black crescent, both with red
+    // contours, red auras and smoke trails.
+    public static readonly SpriteDef Skull = new SpriteDef("skull",     0, 40, Color.white, takesLife: true);
+    public static readonly SpriteDef Moon  = new SpriteDef("crescent", -15, 42, Color.white);
 
+    // Lives: hearts in fresh greens/pinks — never confusable with a star.
     public static readonly SpriteDef[] LifeTypes = {
-        new SpriteDef("heart", 0, 34, new Color(0.42f, 0.93f, 0.60f)),
-        new SpriteDef("heart", 0, 34, new Color(0.55f, 0.85f, 1.00f)),
-        new SpriteDef("heart", 0, 34, new Color(1.00f, 0.55f, 0.75f)),
+        new SpriteDef("heart", 0, 38, new Color(0.36f, 0.95f, 0.55f)),
+        new SpriteDef("heart", 0, 38, new Color(0.55f, 1.00f, 0.75f)),
+        new SpriteDef("heart", 0, 38, new Color(1.00f, 0.45f, 0.70f)),
     };
 
+    // Power-ups each get their own badge silhouette.
     public static readonly PowerupDef[] Powerups = {
-        new PowerupDef("magnet",  "Magnet!",   6f, new Color(0.40f, 0.91f, 0.98f)),
-        new PowerupDef("slowmo",  "Slow-mo!",  5f, new Color(0.77f, 0.71f, 0.99f), vuxenOnly: true),
-        new PowerupDef("rainbow", "Regnbåge!", 7f, new Color(1.00f, 0.62f, 0.89f)),
+        new PowerupDef("magnet",  "Magnet!",   "magnet",     6f, new Color(0.40f, 0.91f, 0.98f)),
+        new PowerupDef("slowmo",  "Slow-mo!",  "hourglass",  5f, new Color(0.77f, 0.71f, 0.99f), vuxenOnly: true),
+        new PowerupDef("rainbow", "Regnbåge!", "rainbowarc", 7f, new Color(1.00f, 0.62f, 0.89f)),
     };
     public const float PowerupSpawnChance = 0.05f;
     public const float PowerupExtendSec   = 5f;
 
-    // Party-mode sprites — festive shapes, all 5 pts
+    // Party-mode sprites — festive outlined shapes, all 5 pts.
+    // (No plain circles: every falling sprite must have a contour.)
     public static readonly SpriteDef[] PartyTypes = {
-        new SpriteDef("gift",   5, 40, new Color(1.00f, 0.45f, 0.55f)),
-        new SpriteDef("gift",   5, 38, new Color(0.55f, 0.75f, 1.00f)),
-        new SpriteDef("circle", 5, 38, new Color(1.00f, 0.85f, 0.30f)),
-        new SpriteDef("heart",  5, 38, new Color(1.00f, 0.50f, 0.80f)),
-        new SpriteDef("star",   5, 40, new Color(0.60f, 1.00f, 0.60f)),
-        new SpriteDef("circle", 5, 36, new Color(0.90f, 0.55f, 1.00f)),
-        new SpriteDef("gift",   5, 38, new Color(0.45f, 0.95f, 0.85f)),
-        new SpriteDef("heart",  5, 36, new Color(1.00f, 0.70f, 0.40f)),
+        new SpriteDef("gift",     5, 42, new Color(1.00f, 0.45f, 0.55f)),
+        new SpriteDef("gift",     5, 40, new Color(0.55f, 0.75f, 1.00f)),
+        new SpriteDef("sparkle4", 5, 40, new Color(1.00f, 0.85f, 0.30f)),
+        new SpriteDef("heart",    5, 40, new Color(1.00f, 0.50f, 0.80f)),
+        new SpriteDef("star",     5, 42, new Color(0.60f, 1.00f, 0.60f)),
+        new SpriteDef("sparkle4", 5, 38, new Color(0.90f, 0.55f, 1.00f)),
+        new SpriteDef("gift",     5, 40, new Color(0.45f, 0.95f, 0.85f)),
+        new SpriteDef("heart",    5, 38, new Color(1.00f, 0.70f, 0.40f)),
     };
 
     // Golden-chase crown, per difficulty
